@@ -1,8 +1,9 @@
-.PHONY: help test backend-test backend-build backend-run frontend-install frontend-build frontend-dev db-up db-down
+.PHONY: help test verify backend-test backend-verify backend-build backend-run frontend-install frontend-build frontend-dev db-up db-down
 
 help:
 	@echo "Targets:"
-	@echo "  test             Run all tests"
+	@echo "  test             Run unit tests (no Docker needed)"
+	@echo "  verify           Run unit and integration tests (needs Docker)"
 	@echo "  backend-build    Build the backend jar"
 	@echo "  backend-run      Run the backend locally"
 	@echo "  frontend-build   Build the frontend bundle"
@@ -11,8 +12,13 @@ help:
 
 test: backend-test
 
+verify: backend-verify
+
 backend-test:
 	cd backend && ./mvnw -B test
+
+backend-verify:
+	cd backend && ./mvnw -B verify
 
 backend-build:
 	cd backend && ./mvnw -B package
