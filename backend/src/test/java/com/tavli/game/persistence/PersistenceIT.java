@@ -3,7 +3,7 @@ package com.tavli.game.persistence;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.tavli.TestcontainersConfiguration;
+import com.tavli.IntegrationTestConfiguration;
 import com.tavli.engine.Board;
 import com.tavli.engine.GameState;
 import com.tavli.engine.Move;
@@ -22,7 +22,7 @@ import org.springframework.context.annotation.Import;
 import org.springframework.dao.DataIntegrityViolationException;
 
 @SpringBootTest
-@Import(TestcontainersConfiguration.class)
+@Import(IntegrationTestConfiguration.class)
 class PersistenceIT {
 
     @Autowired

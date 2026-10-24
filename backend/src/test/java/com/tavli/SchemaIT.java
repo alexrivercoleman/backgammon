@@ -13,7 +13,7 @@ import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.simple.JdbcClient;
 
 @SpringBootTest
-@Import(TestcontainersConfiguration.class)
+@Import(IntegrationTestConfiguration.class)
 class SchemaIT {
 
     @Autowired

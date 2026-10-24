@@ -8,12 +8,12 @@ import java.util.List;
  * Test helpers for building positions and moves. Positions and move notation are written from WHITE's point
  * of view; {@link #forPlayer} mirrors them so the same scenario can be checked for BLACK.
  */
-final class Positions {
+public final class Positions {
 
     private Positions() {
     }
 
-    static Builder board() {
+    public static Builder board() {
         return new Builder();
     }
 
@@ -69,32 +69,32 @@ final class Positions {
     }
 
     /** Builds a board from WHITE-perspective points; any checkers not placed count as borne off. */
-    static final class Builder {
+    public static final class Builder {
         private final int[] points = new int[Board.POINTS];
         private int whiteBar;
         private int blackBar;
 
-        Builder white(int point, int count) {
+        public Builder white(int point, int count) {
             points[point - 1] += count;
             return this;
         }
 
-        Builder black(int point, int count) {
+        public Builder black(int point, int count) {
             points[point - 1] -= count;
             return this;
         }
 
-        Builder whiteBar(int count) {
+        public Builder whiteBar(int count) {
             whiteBar += count;
             return this;
         }
 
-        Builder blackBar(int count) {
+        public Builder blackBar(int count) {
             blackBar += count;
             return this;
         }
 
-        Board build() {
+        public Board build() {
             int white = whiteBar;
             int black = blackBar;
             for (int value : points) {
