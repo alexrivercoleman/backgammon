@@ -177,6 +177,37 @@ public final class TurnPlan {
         return Collections.unmodifiableSet(result);
     }
 
+    /**
+     * The pruned graph as a list of nodes, numbered breadth-first from the starting position (id 0) in move
+     * generation order, so the same plan always yields the same ids.
+     */
+    public List<TurnNode> nodes() {
+        Map<Node, Integer> ids = new HashMap<>();
+        List<Node> order = new ArrayList<>();
+        ids.put(root, 0);
+        order.add(root);
+        for (int i = 0; i < order.size(); i++) {
+            for (Node child : edges.get(order.get(i)).values()) {
+                if (ids.putIfAbsent(child, order.size()) == null) {
+                    order.add(child);
+                }
+            }
+        }
+
+        List<TurnNode> result = new ArrayList<>(order.size());
+        for (int id = 0; id < order.size(); id++) {
+            Node node = order.get(id);
+            List<TurnEdge> out = new ArrayList<>();
+            edges.get(node).forEach((move, child) -> out.add(new TurnEdge(move, isHit(node.board(), move), ids.get(child))));
+            result.add(new TurnNode(id, node.board(), node.unused(), finishing.contains(node), out));
+        }
+        return List.copyOf(result);
+    }
+
+    private boolean isHit(Board before, Move move) {
+        return !move.isBearOff() && before.count(player.opponent(), move.to()) == 1;
+    }
+
     /** The distinct positions a legal turn can end in. */
     public Set<Board> outcomes() {
         Set<Board> result = new LinkedHashSet<>();
