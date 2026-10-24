@@ -20,6 +20,8 @@ final class MoveGenerator {
             }
             return moves;
         }
+        boolean bearingOff = board.allHome(player);
+        int highestPip = board.highestPip(player);
         for (int pip = Board.POINTS; pip >= 1; pip--) {
             int from = Board.point(player, pip);
             if (board.count(player, from) == 0) {
@@ -31,9 +33,16 @@ final class MoveGenerator {
                 if (isOpen(board, player, to)) {
                     moves.add(new Move(from, to, die));
                 }
+            } else if (bearingOff && canBearOff(pip, die, highestPip)) {
+                moves.add(new Move(from, Move.OFF, die));
             }
         }
         return moves;
+    }
+
+    /** Exact rolls bear off; a higher die may bear off only from the highest occupied point. */
+    private static boolean canBearOff(int pip, int die, int highestPip) {
+        return die == pip || (die > pip && pip == highestPip);
     }
 
     /** A point is open unless the opponent holds it with two or more checkers. */

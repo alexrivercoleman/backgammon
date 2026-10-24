@@ -87,4 +87,57 @@ class SingleMovesTest {
 
         assertThat(generate(player, whiteView, 3)).containsExactlyInAnyOrderElementsOf(moves(player, "7/4"));
     }
+
+    @ParameterizedTest
+    @EnumSource(Player.class)
+    void bearsOffWithAnExactRollOnceAllCheckersAreHome(Player player) {
+        Board whiteView = board().white(5, 1).white(3, 2).build();
+
+        assertThat(generate(player, whiteView, 3)).containsExactlyInAnyOrderElementsOf(moves(player, "5/2 3/off"));
+    }
+
+    @ParameterizedTest
+    @EnumSource(Player.class)
+    void higherDieBearsOffFromTheHighestOccupiedPoint(Player player) {
+        Board whiteView = board().white(4, 1).white(2, 2).build();
+
+        assertThat(generate(player, whiteView, 6)).containsExactlyElementsOf(moves(player, "4/off:6"));
+    }
+
+    @ParameterizedTest
+    @EnumSource(Player.class)
+    void higherDieCannotBearOffWhileAHigherPointIsOccupied(Player player) {
+        // A 4 cannot bear off from the 3-point while a checker sits on the 5-point; it must move 5/1.
+        Board whiteView = board().white(5, 1).white(3, 2).build();
+
+        assertThat(generate(player, whiteView, 4)).containsExactlyElementsOf(moves(player, "5/1"));
+    }
+
+    @ParameterizedTest
+    @EnumSource(Player.class)
+    void movingInsideTheHomeBoardIsAnAlternativeToBearingOff(Player player) {
+        Board whiteView = board().white(6, 1).white(4, 1).build();
+
+        assertThat(generate(player, whiteView, 2))
+                .containsExactlyInAnyOrderElementsOf(moves(player, "6/4 4/2"));
+        assertThat(generate(player, whiteView, 4))
+                .containsExactlyInAnyOrderElementsOf(moves(player, "6/2 4/off"));
+    }
+
+    @ParameterizedTest
+    @EnumSource(Player.class)
+    void aCheckerOnTheBarStopsBearingOff(Player player) {
+        Board whiteView = board().whiteBar(1).white(3, 2).build();
+
+        assertThat(generate(player, whiteView, 3)).containsExactlyElementsOf(moves(player, "bar/22"));
+    }
+
+    @ParameterizedTest
+    @EnumSource(Player.class)
+    void bearingOffIgnoresTheOpponentsCheckers(Player player) {
+        Board whiteView = board().white(2, 1).black(1, 2).build();
+
+        assertThat(generate(player, whiteView, 1)).isEmpty();
+        assertThat(generate(player, whiteView, 2)).containsExactlyElementsOf(moves(player, "2/off"));
+    }
 }
