@@ -54,6 +54,7 @@ public class GameController {
         return view(games.roll(id, request.turnNumber(), request.player()));
     }
 
+    /** The append-only history of throws and turns. The UI doesn't need it; it is for inspecting or replaying games. */
     @GetMapping("/{id}/log")
     public List<LogEntryView> log(@PathVariable UUID id) {
         return games.log(id).stream().map(LogEntryView::of).toList();

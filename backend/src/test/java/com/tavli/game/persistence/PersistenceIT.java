@@ -12,6 +12,7 @@ import com.tavli.engine.Player;
 import com.tavli.engine.Roll;
 import com.tavli.game.Game;
 import com.tavli.game.LogEntry;
+import com.tavli.game.StaleTurnException;
 import com.tavli.game.LogEntry.Kind;
 import java.util.List;
 import java.util.UUID;
@@ -51,8 +52,11 @@ class PersistenceIT {
         games.insert(game);
         Game next = new Game(game.id(), 2, GameState.moving(Board.starting(), Player.BLACK, new Roll(2, 2)));
 
-        assertThat(games.update(next, 1)).isTrue();
-        assertThat(games.update(next, 1)).isFalse();
+        games.update(next, 1);
+
+        assertThatThrownBy(() -> games.update(next, 1)).isInstanceOf(StaleTurnException.class);
+        assertThatThrownBy(() -> games.update(new Game(UUID.randomUUID(), 2, next.state()), 1))
+                .isInstanceOf(StaleTurnException.class);
         assertThat(games.find(game.id())).contains(next);
     }
 
