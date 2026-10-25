@@ -15,6 +15,13 @@ docker info >/dev/null 2>&1 || { echo "Docker is not running" >&2; exit 1; }
 if ! k3d cluster get "$CLUSTER" >/dev/null 2>&1; then
   echo "Creating k3d cluster '$CLUSTER' with the app on port $APP_PORT"
   k3d cluster create "$CLUSTER" --port "$APP_PORT:80@loadbalancer" --wait
+else
+  # The port is fixed when the cluster is created, so report the one it actually serves on.
+  bound=$(docker port "k3d-$CLUSTER-serverlb" 80/tcp 2>/dev/null | head -n 1 | sed 's/.*://')
+  if [ -n "$bound" ] && [ "$bound" != "$APP_PORT" ]; then
+    echo "Cluster '$CLUSTER' already serves the app on port $bound, not $APP_PORT; 'make down' first to change it" >&2
+    APP_PORT=$bound
+  fi
 fi
 
 # Without provenance/SBOM attestations (which carry a timestamp), an unchanged rebuild keeps the same image ID.
