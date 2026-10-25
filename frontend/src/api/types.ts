@@ -64,17 +64,6 @@ export interface GameView {
   turn: TurnView | null
 }
 
-export interface LogEntry {
-  seq: number
-  kind: 'OPENING_THROW' | 'ROLL' | 'TURN'
-  turnNumber: number | null
-  player: Player | null
-  /** [white, black] for an opening throw, the two dice for a roll. */
-  dice: [number, number] | null
-  moves: Move[] | null
-  createdAt: string
-}
-
 /** RFC 9457 problem details returned for errors. */
 export interface ProblemDetail {
   status: number

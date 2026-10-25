@@ -92,7 +92,7 @@ public class GameService {
 
         RollOutcome outcome = engine.roll(state);
         Game updated = new Game(id, turnNumber, outcome.state());
-        games.update(updated, turnNumber);
+        saveFromTurn(updated, turnNumber);
         if (outcome.openingThrow() != null) {
             log.appendOpeningThrow(id, outcome.openingThrow());
         }
@@ -122,9 +122,16 @@ public class GameService {
 
         GameState next = engine.play(state, moves);
         Game updated = new Game(id, turnNumber + 1, next);
-        games.update(updated, turnNumber);
+        saveFromTurn(updated, turnNumber);
         log.appendTurn(id, turnNumber, state.toMove(), moves);
         return updated;
+    }
+
+    /** Saves the game; the row lock taken on load means it is still on {@code turnNumber}, so this cannot miss. */
+    private void saveFromTurn(Game game, int turnNumber) {
+        if (!games.update(game, turnNumber)) {
+            throw new IllegalStateException("Game " + game.id() + " moved on while locked for turn " + turnNumber);
+        }
     }
 
     /** Loads and locks the game, checking it is still in progress and on the turn the client is playing. */

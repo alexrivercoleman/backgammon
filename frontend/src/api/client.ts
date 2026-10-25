@@ -1,4 +1,4 @@
-import type { GameView, LogEntry, Move, Player, ProblemDetail } from './types'
+import type { GameView, Move, Player, ProblemDetail } from './types'
 
 export class ApiError extends Error {
   readonly status: number
@@ -49,8 +49,4 @@ export function rollDice(id: string, turnNumber: number, player: Player): Promis
     method: 'POST',
     body: JSON.stringify({ turnNumber, player }),
   })
-}
-
-export function getLog(id: string): Promise<LogEntry[]> {
-  return request(`/api/games/${id}/log`)
 }
