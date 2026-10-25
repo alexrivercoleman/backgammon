@@ -11,6 +11,7 @@ const TURN_BACK = [{ transform: 'perspective(1800px) rotateX(-88deg)' }, { trans
 export function FlippingBoard(props: BoardProps) {
   const wrapper = useRef<HTMLDivElement>(null)
   const latest = useRef(props)
+  const flips = useRef(0)
   const [frozen, setFrozen] = useState<BoardProps | null>(null)
 
   useLayoutEffect(() => {
@@ -19,16 +20,22 @@ export function FlippingBoard(props: BoardProps) {
     const el = wrapper.current
     if (props.mover === previous.mover || !el || prefersReducedMotion()) return
 
-    // Runs before paint, so the new board is never seen before it has turned away.
+    // Runs before paint, so the new board is never seen before it has turned away. If a flip is already
+    // running, it is abandoned: only the latest flip may unfreeze the board.
+    const flip = ++flips.current
+    el.getAnimations().forEach((a) => a.cancel())
     setFrozen({ ...previous, onPick: undefined, movable: [], destinations: [], selected: null })
     const away = el.animate(TURN_AWAY, { duration: 210, easing: 'ease-in', fill: 'forwards' })
     away.finished.then(
       () => {
+        if (flip !== flips.current) return
         setFrozen(null)
         el.animate(TURN_BACK, { duration: 280, easing: 'cubic-bezier(0.2, 0.8, 0.3, 1)' })
         away.cancel()
       },
-      () => setFrozen(null),
+      () => {
+        if (flip === flips.current) setFrozen(null)
+      },
     )
   }, [props])
 

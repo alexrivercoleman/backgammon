@@ -97,7 +97,8 @@ export function useGame(): GameController {
   const submit = (moves: Move[]) => act((g) => submitTurn(g.id, g.turnNumber, moves))
 
   const retry = () => {
-    if (!game) {
+    // With no game, or a finished one, the failed action was creating a game, so try that again.
+    if (!game || game.status === 'FINISHED') {
       void begin()
     } else {
       setBusy(true)

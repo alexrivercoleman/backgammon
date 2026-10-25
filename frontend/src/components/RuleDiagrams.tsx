@@ -1,7 +1,7 @@
 // Small illustrations for the rules card, drawn in the board's own wood, stains and checkers. The mini board
 // uses the same layout as the real one: the reader's home is bottom-right, next to the tray.
 
-import type { ReactNode } from 'react'
+import { createContext, useContext, useId, type ReactNode } from 'react'
 
 const WOOD = { frame: '#5b3a21', field: '#e2c494', light: '#c18c55', dark: '#6b3a1f', tray: '#3a2414' }
 const BLUE = '#3d8fe0'
@@ -43,10 +43,14 @@ function Checker({ x, y, tone, r = 6.5, glow = false }: {
   )
 }
 
+/** The id of the enclosing diagram's arrowhead marker; each diagram defines its own. */
+const ArrowMarker = createContext('')
+
 function Arrow({ d, dashed = false }: { d: string; dashed?: boolean }) {
+  const marker = useContext(ArrowMarker)
   return (
     <path d={d} fill="none" stroke={BLUE} strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round"
-      strokeDasharray={dashed ? '5 4' : undefined} markerEnd="url(#rule-arrow)" />
+      strokeDasharray={dashed ? '5 4' : undefined} markerEnd={`url(#${marker})`} />
   )
 }
 
@@ -61,15 +65,16 @@ function Tick({ x, y, ok }: { x: number; y: number; ok: boolean }) {
 }
 
 function Svg({ width, height, label, children }: { width: number; height: number; label: string; children: ReactNode }) {
+  const marker = `rule-arrow-${useId().replace(/[^a-zA-Z0-9_-]/g, '')}`
   return (
     <svg className="rule-art" viewBox={`0 0 ${width} ${height}`} role="img" aria-label={label}>
       <defs>
-        <marker id="rule-arrow" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="5" markerHeight="5"
+        <marker id={marker} viewBox="0 0 10 10" refX="7" refY="5" markerWidth="5" markerHeight="5"
           orient="auto-start-reverse">
           <path d="M 0 0 L 10 5 L 0 10 z" fill={BLUE} />
         </marker>
       </defs>
-      {children}
+      <ArrowMarker.Provider value={marker}>{children}</ArrowMarker.Provider>
     </svg>
   )
 }
