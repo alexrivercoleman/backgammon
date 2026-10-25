@@ -9,7 +9,7 @@ const NAMES: Record<Player, string> = { WHITE: 'White', BLACK: 'Black' }
 /** Whose turn it is, the dice, a hint for the next step, and the buttons for what the game is waiting for. */
 export function TurnPanel({ controller }: { controller: GameController }) {
   const { game, node, busy } = controller
-  if (!game || game.phase === 'FINISHED') return null
+  if (!game) return null
 
   let title: string
   let hint: string
@@ -33,6 +33,17 @@ export function TurnPanel({ controller }: { controller: GameController }) {
         )}
       </>
     )
+  } else if (game.phase === 'FINISHED') {
+    // Still shown under the game-over card so the board below it stays put.
+    title = `${NAMES[game.toMove]} wins`
+    hint = 'All fifteen checkers borne off.'
+    dice = (
+      <div className="dice">
+        <DieSlot />
+        <DieSlot />
+      </div>
+    )
+    actions = null
   } else if (game.phase === 'OPENING') {
     title = `${NAMES[game.toMove]}, roll for the start`
     hint = openingHint(game)

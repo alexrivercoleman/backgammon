@@ -47,7 +47,6 @@ export function GameOver({ winner, turns, onPlayAgain, busy }: {
         ))}
       </div>
       <div className="victory" role="dialog" aria-labelledby="victory-title">
-        <span className="kicker">Opa!</span>
         <h2 id="victory-title">
           <span className={`swatch swatch-${winner.toLowerCase()}`} aria-hidden="true" />
           {NAMES[winner]} wins
