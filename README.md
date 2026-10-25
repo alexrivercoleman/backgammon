@@ -1,85 +1,119 @@
 # Tavli Portes
 
-A web version of Tavli Portes (Greek backgammon) for two players sharing one screen.
+Portes, the Greek form of backgammon, for two players taking turns on one screen. The server rolls the dice,
+works out every legal move and checks each turn. The browser draws the board and lets players move one checker
+at a time, with undo, before confirming. A **?** button in the app explains the rules for newcomers.
 
-## Layout
+## Quick start
 
-| Path                 | What                                                     |
-|----------------------|----------------------------------------------------------|
-| `backend/`           | Java 25 / Spring Boot server, including the rules engine |
-| `frontend/`          | React + TypeScript + Vite client                         |
-| `k8s/`               | Kubernetes manifests (k3d)                               |
-| `docker-compose.yml` | Local development services (Postgres)                    |
+Needs Docker, [k3d](https://k3d.io), kubectl and make.
 
-The rules engine (`backend/src/main/java/com/tavli/engine`) is plain Java with no framework imports. The
-server is authoritative: it rolls the dice, sends every legal way to play the roll, and validates each
-submitted turn.
+```sh
+make up      # build the images, create a local k3d cluster, deploy, wait until ready
+             # → http://localhost:8088
+make smoke   # check the page loads and a game can be created
+make down    # delete the cluster
+```
+
+`make up` is safe to re-run; it only restarts what was rebuilt. Without Kubernetes, `make compose-up` runs the
+same images with docker compose on the same port (`make compose-down` to stop). Set `APP_PORT` to use another
+port.
+
+## How it fits together
+
+```mermaid
+flowchart LR
+    B["Browser<br/>React + SVG"] --> N["nginx<br/>static files"]
+    N -- "/api" --> S["Spring Boot ×2"]
+    S --> E["Rules engine<br/>plain Java"]
+    S --> P[("Postgres<br/>games · moves")]
+```
+
+- **Rules engine** (`backend/.../engine`): immutable records and no framework imports (a test enforces this).
+  For a roll it builds a *turn graph*: every position reachable by moving one checker at a time. Different move
+  orders that reach the same position share a node, so equivalent sequences are deduplicated without
+  rejecting any order a player might choose. The forced-move rules (use as many dice as possible, else the
+  higher die) decide which nodes finish a turn. Dead ends are pruned, so every move offered can be completed.
+- **Server**: the dice are rolled only when a player asks. Each view of a game carries the turn graph. The
+  client walks it locally, so moving and undoing are instant, and submits the moves taken. The server checks
+  them against a fresh graph before applying them.
+- **Storage**: `games` holds each game's current state as versioned JSONB. `moves` is an append-only log (a
+  trigger rejects updates and deletes) of every opening throw, roll and turn. A test replays whole games from
+  the log alone and gets the stored state back.
+- **Concurrency**: each action locks its game row and carries the turn number it was made for, so double
+  clicks or two tabs cannot apply a turn twice. The server holds no state between requests, which is why it
+  runs two replicas.
+- **Deployment**: multi-stage images (JDK → JRE, Node → nginx). nginx serves the UI and proxies `/api`, so
+  compose and Kubernetes route the same way. In k8s, Postgres is a StatefulSet with a volume, the backend has
+  Actuator probes, and Traefik's Ingress fronts nginx.
+
+| Path | What |
+|---|---|
+| `backend/` | Spring Boot 4 / Java 25: `engine` (rules), `game` (service, persistence), `api` (REST) |
+| `frontend/` | React + TypeScript + Vite: `api`, `game` (turn walking), `board` (SVG), `components` |
+| `k8s/` | Kubernetes manifests, applied with `kubectl apply -k k8s` |
+| `scripts/` | `make up` and `make smoke` |
+
+## Rules as implemented
+
+Standard Portes: 15 checkers each, standard starting position, players moving in opposite directions. Each
+player throws one die to decide who starts, and the higher plays both dice (a tie is thrown again). Doubles
+play four times. A single opposing checker can be hit and must re-enter before its owner moves anything else.
+Two or more block a point. Bearing off starts once all 15 are home.
+
+Decisions where the rules leave room (recorded in `engine/package-info.java`):
+
+- A player with no legal move passes, using a button, so both players see the roll.
+- A turn must use as many dice as possible; if only one die can be used, it must be the higher.
+- A die higher than needed may bear off the farthest checker, but moving within the home board instead is
+  also allowed.
+- A checker hit while bearing off must come home again before bearing off continues.
+- Bearing off the 15th checker wins immediately, even if a die is left over.
+- When bearing off could use either die, the UI uses the lower one first (undo to choose the other).
+
+Not included: the doubling cube, gammon scoring, and the other Tavli games (Plakoto, Fevga).
+
+## Tests
+
+```sh
+make test     # backend and frontend unit tests, no Docker needed
+make verify   # plus backend integration tests against a Testcontainers Postgres
+```
+
+- **Engine**: every rule, run for both colours, plus a cross-check of the turn graph against brute-force
+  enumeration on random positions, and 50 random games played to a finish.
+- **Backend integration**: schema constraints, persistence, the service (including simultaneous requests for the same turn), the
+  REST API, and seeded whole games played over HTTP and replayed from the log.
+- **Frontend**: turn-graph walking and board geometry (Vitest).
 
 ## Development
 
-Requires Java 25, Node 24 and Docker.
-
 ```sh
-make db-up           # start Postgres (docker compose)
-make backend-run     # start the server on :8080; Flyway migrates the schema on startup
-make frontend-dev    # start the Vite dev server on :5173 (proxies /api to :8080)
-
-make test            # backend and frontend unit tests (no Docker needed)
-make verify          # backend unit + integration tests (Testcontainers Postgres; Docker must be running)
+make db-up          # Postgres only, via docker compose
+make backend-run    # Spring Boot on :8080; Flyway migrates on startup
+make frontend-dev   # Vite on :5173, proxying /api to :8080
 ```
-
-Then open http://localhost:5173. Each page load starts a new game.
-
-## Playing
-
-Two players share the screen. The board is always drawn from the point of view of the player to move:
-their home is bottom-right next to the bear-off tray, and the board flips when the turn passes.
-
-1. To decide who starts, White and Black each press **Roll die** for one die; the higher number starts and
-   plays both opening dice (a tie is thrown again).
-2. Each later turn starts with **Roll dice**. The server rolls only when the player asks.
-3. Click a checker glowing blue to pick it up; dashed rings show where it can go (red if it hits a blot, the
-   tray if it can bear off).
-4. Click a destination. Repeat for each die; played dice are dimmed. **Undo** takes back one move.
-5. **Confirm** once the turn is complete, or **Pass** when no move is possible.
-
-The UI only follows the turn graph the server sends; it never decides what is legal. When bearing off could
-use either die, a click uses the lower one so the higher stays available (undo to choose otherwise).
-
-Frontend layout: `src/api` (typed client), `src/game` (turn walking and the `useGame` hook), `src/board`
-(SVG board, geometry and flip animation), `src/components` (panel, dice, opening banner, game over).
 
 ## API
 
-All endpoints are under `/api/games`. Errors are [RFC 9457](https://www.rfc-editor.org/rfc/rfc9457) problem
-details.
+Under `/api/games`; errors are [RFC 9457](https://www.rfc-editor.org/rfc/rfc9457) problem details.
 
-| Method | Path                    | Body                       | Result                                           |
-|--------|-------------------------|----------------------------|--------------------------------------------------|
-| POST   | `/api/games`            |                            | `201` new game at the opening; nothing rolled yet |
-| GET    | `/api/games/{id}`       |                            | `200` game                                       |
-| POST   | `/api/games/{id}/roll`  | `{"turnNumber", "player"}` | `200` game after the roll; `400`, `404`, `409` not this player's roll, stale or finished |
-| POST   | `/api/games/{id}/turns` | `{"turnNumber", "moves"}`  | `200` game after the turn; `400`, `404`, `409` not rolled yet, stale or finished, `422` illegal |
-| GET    | `/api/games/{id}/log`   |                            | `200` every opening throw, roll and turn in order |
+| Method | Path | Body | Result |
+|---|---|---|---|
+| POST | `/api/games` | | `201` a new game, waiting for White's opening die |
+| GET | `/api/games/{id}` | | `200` the game |
+| POST | `/api/games/{id}/roll` | `{"turnNumber", "player"}` | `200`; `409` if it isn't that player's roll |
+| POST | `/api/games/{id}/turns` | `{"turnNumber", "moves"}` | `200`; `409` stale or not rolled, `422` illegal |
+| GET | `/api/games/{id}/log` | | `200` the full history, in order |
 
-- **Phases**: `phase` says what the game is waiting for. `OPENING`: `toMove` throws their single opening die
-  (WHITE first; `openingDie` holds WHITE's die until BLACK throws; ties start over, and `openingThrows` lists
-  the rounds). `ROLLING`: `toMove` must roll. `MOVING`: `dice` and `turn` are present. `FINISHED`: `winner` is
-  set. The higher opening thrower plays both opening dice without rolling again.
+A game's `phase` says what it's waiting for: `OPENING`, `ROLLING`, `MOVING` (with `dice` and the `turn` graph)
+or `FINISHED`. Board points are 24 signed counts (index 0 is point 1, positive is White). Moves look like
+`{"from": 13 | "bar", "to": 7 | "off", "die": 6}`.
 
-- **Board**: `points` has 24 signed counts, index 0 = point 1; positive is WHITE, negative is BLACK. WHITE moves
-  24 → 1 (home 1–6), BLACK moves 1 → 24 (home 19–24). `bar` and `off` count checkers per player.
-- **Moves**: `{"from": 13 | "bar", "to": 7 | "off", "die": 6}`.
-- **Turn graph**: while a game is in progress, `turn.nodes` lists every position reachable this turn. Node 0
-  is the current position; each node has its `board`, the `unusedDice`, whether the turn may be submitted
-  there (`finished`), and its legal `moves`, each pointing to the `next` node. Different orders of the same
-  moves lead to the same node. Submit the moves taken from node 0 to any finished node; when `mustPass` is
-  true, submit `[]`.
-- **turnNumber**: send the `turnNumber` from the game you are playing; a mismatch (e.g. a double submit) is
-  rejected with `409`.
+## Trade-offs and next steps
 
-## Rules
-
-Standard Portes. If no move is possible the player passes. A turn must use as many dice as possible, and the
-higher die if only one can be used; a turn that bears off the last checker wins even if a die is left over.
-The doubling cube and gammons are not played.
+- **Local-only setup**: database credentials are committed for local use, images are imported into k3d rather
+  than pushed to a registry, and there is no TLS.
+- **One game per page**: a refresh starts a new game. There is no way to resume, and no accounts or networked
+  play; the server is ready for that, but the UI is built for one shared screen.
+- **Not added**: CI, monitoring, and autoscaling, all left out to keep the scope small.
