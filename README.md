@@ -1,10 +1,17 @@
 # Tavli Portes
 
-Portes, the Greek form of backgammon, for two players taking turns on one screen.
+Portes, the Greek form of backgammon, for two players taking turns on one screen. The game is saved as you
+play and its link is in the address bar, so a refresh picks up where you left off.
 
 ## Quick start
 
-Needs Docker, [k3d](https://k3d.io), kubectl and make.
+With only Docker:
+
+```sh
+docker compose up --build   # → http://localhost:8088
+```
+
+On Kubernetes, which also needs [k3d](https://k3d.io), kubectl and make:
 
 ```sh
 make up      # build the images, create a local k3d cluster, deploy, wait until ready
@@ -12,6 +19,8 @@ make up      # build the images, create a local k3d cluster, deploy, wait until 
 make smoke   # check the page loads and a game can be created
 make down    # delete the cluster
 ```
+
+Both use port 8088, so run one at a time, or pick another port with `APP_PORT=9000`.
 
 ## How it fits together
 
