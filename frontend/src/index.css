@@ -4,10 +4,10 @@
   --ink: #1f2a3a;
   --ink-soft: #4b5568;
   --aegean: #1f4e8c;
-  --panel: rgba(226, 196, 148, 0.96);
-  --panel-solid: #e2c494;
-  --panel-inset: #d6b47e;
-  --panel-edge: rgba(58, 35, 18, 0.3);
+  --panel: rgba(239, 230, 208, 0.96);
+  --panel-solid: #efe6d0;
+  --panel-inset: #e3d7bb;
+  --panel-edge: rgba(91, 58, 33, 0.25);
   font-family: Georgia, 'Times New Roman', serif;
   color: var(--ink);
   color-scheme: light;
