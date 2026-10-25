@@ -1,0 +1,38 @@
+.board {
+  display: block;
+  width: 100%;
+  height: auto;
+  filter: drop-shadow(0 18px 24px rgba(20, 10, 0, 0.45));
+}
+
+/* Wood. The grain rects carry an SVG noise filter; their own fill is irrelevant. */
+.board .frame { fill: #5b3a21; }
+.board .bar { fill: #4e311b; }
+.board .field { fill: #e2c494; }
+.board .field-edge { fill: none; stroke: #3a2312; stroke-width: 3; }
+.board .tray { fill: #3a2414; stroke: #2a190c; stroke-width: 3; }
+
+/* Inlaid points in two stains. */
+.board .point-light { fill: #c18c55; }
+.board .point-dark { fill: #6b3a1f; }
+.board .point { stroke: rgba(40, 20, 8, 0.35); stroke-width: 1; }
+
+.board .hinge line { stroke: #6b4c17; stroke-width: 1.5; }
+.board .hinge circle { fill: #6b4c17; }
+
+.board .checker-groove { fill: none; stroke-width: 1.5; }
+.board .checker-white .checker-groove { stroke: rgba(150, 120, 70, 0.45); }
+.board .checker-black .checker-groove { stroke: rgba(255, 255, 255, 0.14); }
+.board .checker-label { font: 700 22px Georgia, 'Times New Roman', serif; pointer-events: none; }
+.board .checker-white .checker-label { fill: #3b2a14; }
+.board .checker-black .checker-label { fill: #efe6d0; }
+
+.board .slab-white { fill: #efe6d0; stroke: #b8a782; }
+.board .slab-black { fill: #2a2a2a; stroke: #111; }
+
+.board .pip-label {
+  font: 600 12px Georgia, 'Times New Roman', serif;
+  fill: #d9bf93;
+  opacity: 0.85;
+  pointer-events: none;
+}

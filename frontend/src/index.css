@@ -1,9 +1,44 @@
 :root {
-  font-family: system-ui, sans-serif;
+  --cloth: #f7f4ec;
+  --cloth-check: rgba(31, 78, 140, 0.32);
+  --ink: #1f2a3a;
+  --ink-soft: #4b5568;
+  --aegean: #1f4e8c;
+  --panel: rgba(255, 252, 245, 0.92);
+  --panel-edge: rgba(31, 42, 58, 0.12);
+  font-family: Georgia, 'Times New Roman', serif;
+  color: var(--ink);
   color-scheme: light dark;
 }
 
+@media (prefers-color-scheme: dark) {
+  :root {
+    --cloth: #121b2a;
+    --cloth-check: rgba(70, 120, 190, 0.22);
+    --ink: #ece6d8;
+    --ink-soft: #b7b0a2;
+    --aegean: #7fb0ee;
+    --panel: rgba(20, 28, 42, 0.92);
+    --panel-edge: rgba(236, 230, 216, 0.14);
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/* A blue-and-white taverna tablecloth: two crossing bands of translucent blue make the gingham. */
 body {
   margin: 0;
-  padding: 2rem;
+  min-height: 100vh;
+  background-color: var(--cloth);
+  background-image:
+    repeating-linear-gradient(0deg, var(--cloth-check) 0 28px, transparent 28px 56px),
+    repeating-linear-gradient(90deg, var(--cloth-check) 0 28px, transparent 28px 56px);
+}
+
+#root {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 24px 16px 40px;
 }
