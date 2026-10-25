@@ -1,6 +1,7 @@
-# Local stack. `make db-up` starts only Postgres, for hot-reload development with the backend and Vite running
-# on the host. `make compose-up` builds and runs everything at http://localhost:${APP_PORT:-8088}.
-# The credentials are for local use only.
+# Local stack. `make compose-up` builds and runs everything at http://localhost:${APP_PORT:-8088}; Postgres is
+# reachable only inside the compose network, so a database already on the host's 5432 doesn't clash.
+# `make db-up` starts only Postgres, adding docker-compose.dev.yml to publish it on 5432 for hot-reload
+# development with the backend and Vite running on the host. The credentials are for local use only.
 services:
   postgres:
     image: postgres:17-alpine
@@ -8,8 +9,6 @@ services:
       POSTGRES_DB: tavli
       POSTGRES_USER: tavli
       POSTGRES_PASSWORD: tavli
-    ports:
-      - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:

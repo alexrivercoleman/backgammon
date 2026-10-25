@@ -1,0 +1,5 @@
+# Added by `make db-up`: publishes Postgres on the host so a backend running outside Docker can reach it.
+services:
+  postgres:
+    ports:
+      - "5432:5432"

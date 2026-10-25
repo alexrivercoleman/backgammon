@@ -56,7 +56,7 @@ frontend-dev: frontend/node_modules
 	cd frontend && npm run dev
 
 db-up:
-	docker compose up -d postgres
+	docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d postgres
 
 db-down:
 	docker compose stop postgres
