@@ -1,11 +1,18 @@
-.PHONY: help test verify backend-test backend-verify frontend-test backend-build backend-run frontend-install frontend-build frontend-dev db-up db-down compose-up compose-down
+.PHONY: help test verify backend-test backend-verify frontend-test backend-build backend-run frontend-install frontend-build frontend-dev db-up db-down compose-up compose-down up down status smoke
 
 # Host port the containerised app is published on.
 APP_PORT ?= 8088
 export APP_PORT
+# Name of the local k3d cluster.
+CLUSTER ?= tavli
+export CLUSTER
 
 help:
 	@echo "Targets:"
+	@echo "  up               Build and deploy everything to a local k3d cluster on :$(APP_PORT)"
+	@echo "  down             Delete the k3d cluster"
+	@echo "  status           Show the deployed pods, services and ingress"
+	@echo "  smoke            Check the deployed app answers"
 	@echo "  test             Run backend and frontend unit tests (no Docker needed)"
 	@echo "  verify           Run unit and integration tests (needs Docker)"
 	@echo "  backend-build    Build the backend jar"
@@ -60,3 +67,15 @@ compose-up:
 
 compose-down:
 	docker compose down
+
+up:
+	sh scripts/k3d-up.sh
+
+down:
+	k3d cluster delete $(CLUSTER)
+
+status:
+	kubectl --context k3d-$(CLUSTER) -n tavli get pods,services,ingress
+
+smoke:
+	sh scripts/smoke.sh
