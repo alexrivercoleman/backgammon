@@ -1,0 +1,43 @@
+.title {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.title h1 {
+  margin: 0;
+  font-size: 2.4rem;
+  letter-spacing: 0.06em;
+  color: var(--aegean);
+}
+
+.title span {
+  font-style: italic;
+  color: var(--ink-soft);
+  font-size: 1.1rem;
+}
+
+/* Header text sits on the patterned cloth, so give it a soft backing. */
+.title, .loading {
+  padding: 6px 18px;
+  border-radius: 12px;
+  background: var(--panel);
+  width: fit-content;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+  padding: 10px 16px;
+  border-radius: 12px;
+  background: #fbe3df;
+  color: #7a1e12;
+  border: 1px solid #e9a99e;
+}

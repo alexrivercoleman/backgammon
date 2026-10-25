@@ -1,4 +1,7 @@
-import type { BoardView, Player } from '../api/types'
+import type { KeyboardEvent } from 'react'
+import type { BoardView, From, Player } from '../api/types'
+import type { TargetOption } from '../game/turn'
+import type { Location } from '../game/useGame'
 import {
   BAR_WIDTH,
   BAR_X,
@@ -10,6 +13,7 @@ import {
   HALF_WIDTH_UNITS,
   HEIGHT,
   LEFT_HALF_X,
+  MAX_VISIBLE,
   POINT_HEIGHT,
   POINT_WIDTH,
   RIGHT_HALF_X,
@@ -29,12 +33,21 @@ export interface BoardProps {
   board: BoardView
   /** Whose perspective to draw from: their home is bottom-right. */
   mover: Player
+  /** Origins with a legal move; their top checker is highlighted. */
+  movable?: From[]
+  selected?: From | null
+  /** Where the selected checker may go. */
+  destinations?: TargetOption[]
+  onPick?: (location: Location) => void
 }
 
 const PLAYERS: Player[] = ['WHITE', 'BLACK']
 
-export function Board({ board, mover }: BoardProps) {
+export function Board({ board, mover, movable = [], selected = null, destinations = [], onPick }: BoardProps) {
   const slots = pointSlots(mover)
+  const sign = mover === 'WHITE' ? 1 : -1
+  const stateOf = (from: From) => (selected === from ? 'selected' : movable.includes(from) ? 'movable' : undefined)
+  const destination = (to: number | 'off') => destinations.find((d) => d.to === to)
   return (
     <svg className="board" viewBox={`0 0 ${WIDTH} ${HEIGHT}`} role="img" aria-label="Tavli board">
       <Defs />
@@ -69,7 +82,8 @@ export function Board({ board, mover }: BoardProps) {
           <g key={slot.point}>
             {checkers.map((c, i) => (
               <Checker key={i} x={c.x} y={c.y} owner={owner}
-                label={i === checkers.length - 1 ? label : null} />
+                label={i === checkers.length - 1 ? label : null}
+                state={i === checkers.length - 1 ? stateOf(slot.point) : undefined} />
             ))}
           </g>
         )
@@ -79,9 +93,27 @@ export function Board({ board, mover }: BoardProps) {
         const { checkers, label } = barStack(mover, owner, board.bar[owner])
         return checkers.map((c, i) => (
           <Checker key={`${owner}-${i}`} x={c.x} y={c.y} owner={owner}
-            label={i === checkers.length - 1 ? label : null} />
+            label={i === checkers.length - 1 ? label : null}
+            state={owner === mover && i === checkers.length - 1 ? stateOf('bar') : undefined} />
         ))
       })}
+
+      {/* Ghost checkers where the selected checker can land; red when the move hits a blot. */}
+      {slots.map((slot) => {
+        const target = destination(slot.point)
+        if (!target) return null
+        const mine = Math.max(0, sign * board.points[slot.point - 1])
+        const index = Math.min(mine, MAX_VISIBLE - 1)
+        const at = stack(slot.x, slot.baseY, slot.direction, index + 1).checkers[index]
+        return (
+          <circle key={slot.point} className={target.hit ? 'ghost ghost-hit' : 'ghost'}
+            cx={at.x} cy={at.y} r={CHECKER_RADIUS - 2} />
+        )
+      })}
+      {destination('off') && (
+        <rect className="tray-target" x={TRAY_X + 3} y={FIELD_TOP + FIELD_HEIGHT / 2} width={TRAY_WIDTH - 6}
+          height={FIELD_HEIGHT / 2 - 3} rx={6} />
+      )}
 
       {PLAYERS.map((owner) =>
         trayStack(mover, owner, board.off[owner]).slabs.map((s, i) => (
@@ -96,6 +128,29 @@ export function Board({ board, mover }: BoardProps) {
           {slot.pip}
         </text>
       ))}
+
+      {onPick && (
+        <g className="hit-areas">
+          {slots.map((slot) => {
+            const value = board.points[slot.point - 1]
+            const owner = value > 0 ? 'white' : 'black'
+            const contents = value === 0 ? 'empty' : `${Math.abs(value)} ${owner}`
+            return (
+              <HitArea key={slot.point} location={slot.point} onPick={onPick}
+                source={movable.includes(slot.point)} target={destination(slot.point) !== undefined}
+                label={`Point ${slot.pip}, ${contents}`}
+                x={slot.x - POINT_WIDTH / 2} y={slot.top ? FIELD_TOP : FIELD_TOP + FIELD_HEIGHT / 2}
+                width={POINT_WIDTH} height={FIELD_HEIGHT / 2} />
+            )
+          })}
+          <HitArea location="bar" onPick={onPick} source={movable.includes('bar')} target={false}
+            label={`Bar, ${board.bar[mover]} of yours`}
+            x={BAR_X} y={FIELD_TOP + FIELD_HEIGHT / 2} width={BAR_WIDTH} height={FIELD_HEIGHT / 2} />
+          <HitArea location="off" onPick={onPick} source={false} target={destination('off') !== undefined}
+            label={`Bear off, ${board.off[mover]} borne off`}
+            x={TRAY_X} y={FIELD_TOP} width={TRAY_WIDTH} height={FIELD_HEIGHT} />
+        </g>
+      )}
     </svg>
   )
 }
@@ -107,10 +162,48 @@ function Point({ slot }: { slot: PointSlot }) {
   return <path className={slot.dark ? 'point point-dark' : 'point point-light'} d={d} />
 }
 
-function Checker({ x, y, owner, label }: { x: number; y: number; owner: Player; label: number | null }) {
+interface HitAreaProps {
+  location: Location
+  /** Has a checker that can move. */
+  source: boolean
+  /** Where the selected checker can go. */
+  target: boolean
+  label: string
+  x: number
+  y: number
+  width: number
+  height: number
+  onPick: (location: Location) => void
+}
+
+function HitArea({ location, source, target, label, onPick, ...rect }: HitAreaProps) {
+  const active = source || target
+  const onKeyDown = (e: KeyboardEvent) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault()
+      onPick(location)
+    }
+  }
+  return (
+    <rect className={active ? 'hit-area active' : 'hit-area'} {...rect} role="button" aria-label={label}
+      data-source={source || undefined} data-target={target || undefined}
+      tabIndex={active ? 0 : -1} onClick={() => onPick(location)} onKeyDown={onKeyDown} />
+  )
+}
+
+interface CheckerProps {
+  x: number
+  y: number
+  owner: Player
+  label: number | null
+  state?: 'movable' | 'selected'
+}
+
+function Checker({ x, y, owner, label, state }: CheckerProps) {
   const kind = owner.toLowerCase()
   return (
-    <g className={`checker checker-${kind}`}>
+    <g className={`checker checker-${kind}${state ? ` ${state}` : ''}`}>
+      {state && <circle className="checker-ring" cx={x} cy={y} r={CHECKER_RADIUS + 4} />}
       <circle cx={x} cy={y} r={CHECKER_RADIUS} fill={`url(#checker-${kind})`} filter="url(#shadow)" />
       <circle className="checker-groove" cx={x} cy={y} r={CHECKER_RADIUS * 0.62} />
       {label !== null && (

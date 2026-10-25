@@ -36,3 +36,44 @@
   opacity: 0.85;
   pointer-events: none;
 }
+
+/* Interaction: rings on movable and selected checkers, ghosts on destinations. */
+.board .checker-ring { fill: none; stroke-width: 3; }
+.board .checker.movable .checker-ring {
+  stroke: rgba(255, 236, 170, 0.85);
+  animation: breathe 1.6s ease-in-out infinite;
+}
+.board .checker.selected .checker-ring { stroke: #ffd451; stroke-width: 4; }
+.board .checker { transition: transform 140ms ease-out; transform-box: fill-box; transform-origin: center; }
+.board .checker.selected { transform: translateY(-3px) scale(1.06); }
+
+.board .ghost {
+  fill: rgba(255, 248, 225, 0.28);
+  stroke: rgba(255, 244, 205, 0.95);
+  stroke-width: 3;
+  stroke-dasharray: 7 5;
+  animation: breathe 1.2s ease-in-out infinite;
+  pointer-events: none;
+}
+.board .ghost-hit { fill: rgba(200, 40, 30, 0.22); stroke: #e0533f; }
+.board .tray-target {
+  fill: rgba(255, 236, 170, 0.12);
+  stroke: #ffd451;
+  stroke-width: 3;
+  stroke-dasharray: 8 6;
+  animation: breathe 1.2s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.board .hit-area { fill: transparent; outline: none; }
+.board .hit-area.active { cursor: pointer; }
+.board .hit-area:focus-visible { stroke: #ffd451; stroke-width: 3; }
+
+@keyframes breathe {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.45; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .board .checker-ring, .board .ghost, .board .tray-target { animation: none; }
+}
