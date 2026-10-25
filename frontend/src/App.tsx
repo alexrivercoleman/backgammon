@@ -21,7 +21,7 @@ function App() {
       {error && (
         <div className="error" role="alert">
           <span>{error}</span>
-          <button type="button" onClick={controller.retry}>Retry</button>
+          <button type="button" onClick={controller.retry}>{controller.retryLabel}</button>
         </div>
       )}
 

@@ -16,6 +16,8 @@ export interface GameController {
   destinations: TargetOption[]
   busy: boolean
   error: string | null
+  /** What the error's button says: "New game" once the server has lost the game, otherwise "Retry". */
+  retryLabel: string
   pick(location: Location): void
   /** Rolls for the player to act: their opening die, or their dice for the turn. */
   roll(): void
@@ -26,12 +28,29 @@ export interface GameController {
   retry(): void
 }
 
+type Request = (current: GameView) => Promise<GameView>
+
+/** What Retry does after an error. */
+type Recovery =
+  /** Creating a game failed, or the server no longer has this one: start a new game. */
+  | { kind: 'new-game' }
+  /** The server refused the action and the board was reloaded: reload it again. */
+  | { kind: 'reload' }
+  /** The request may not have arrived: repeat it, unless the reloaded game shows it did. */
+  | { kind: 'repeat'; request: Request }
+
+interface Failure {
+  message: string
+  label: string
+  recovery: Recovery
+}
+
 export function useGame(): GameController {
   const [game, setGame] = useState<GameView | null>(null)
   const [walk, setWalk] = useState<TurnWalk>(startWalk)
   const [selected, setSelected] = useState<From | null>(null)
   const [busy, setBusy] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [failure, setFailure] = useState<Failure | null>(null)
 
   const show = useCallback((next: GameView) => {
     setGame(next)
@@ -39,13 +58,22 @@ export function useGame(): GameController {
     setSelected(null)
   }, [])
 
+  /** Reports an error; `recovery` applies unless the server lost the game or refused the action. */
+  const fail = useCallback((e: unknown, recovery: Recovery) => {
+    if (e instanceof ApiError && e.status === 404) {
+      setFailure({ message: 'This game is no longer on the server.', label: 'New game', recovery: { kind: 'new-game' } })
+    } else {
+      setFailure({ message: describe(e), label: 'Retry', recovery: refused(e) ? { kind: 'reload' } : recovery })
+    }
+  }, [])
+
   const begin = useCallback(async () => {
     setBusy(true)
-    setError(null)
+    setFailure(null)
     try {
       show(await createGame())
     } catch (e) {
-      setError(describe(e))
+      setFailure({ message: describe(e), label: 'Retry', recovery: { kind: 'new-game' } })
     } finally {
       setBusy(false)
     }
@@ -77,36 +105,52 @@ export function useGame(): GameController {
     }
   }
 
-  /** Sends an action to the server and shows the game it returns. */
-  const act = async (request: (current: GameView) => Promise<GameView>) => {
+  /** Sends an action for `base` to the server and shows the game it returns. */
+  const perform = async (base: GameView, request: Request) => {
+    try {
+      show(await request(base))
+    } catch (e) {
+      fail(e, { kind: 'repeat', request })
+      // The server refused the action (out of turn, stale or illegal); reload its view so the board matches.
+      if (refused(e)) {
+        show(await getGame(base.id).catch(() => base))
+      }
+    }
+  }
+
+  const act = async (request: Request) => {
     if (!game || busy) return
     setBusy(true)
-    setError(null)
+    setFailure(null)
     try {
-      show(await request(game))
-    } catch (e) {
-      setError(describe(e))
-      // The server refused the action (out of turn, stale or illegal); reload its view so the board matches.
-      if (e instanceof ApiError && (e.status === 409 || e.status === 422)) {
-        show(await getGame(game.id).catch(() => game))
-      }
+      await perform(game, request)
     } finally {
       setBusy(false)
     }
   }
   const submit = (moves: Move[]) => act((g) => submitTurn(g.id, g.turnNumber, moves))
 
-  const retry = () => {
-    // With no game, or a finished one, the failed action was creating a game, so try that again.
-    if (!game || game.status === 'FINISHED') {
-      void begin()
-    } else {
-      setBusy(true)
-      setError(null)
-      getGame(game.id)
-        .then(show)
-        .catch((e) => setError(describe(e)))
-        .finally(() => setBusy(false))
+  const retry = async () => {
+    if (!failure || busy) return
+    const { recovery } = failure
+    if (!game || recovery.kind === 'new-game') {
+      await begin()
+      return
+    }
+    setBusy(true)
+    setFailure(null)
+    try {
+      // Reload first: the failed request may have reached the server after all, and must not be applied twice.
+      const fresh = await getGame(game.id)
+      if (recovery.kind === 'repeat' && sameStep(fresh, game)) {
+        await perform(fresh, recovery.request)
+      } else {
+        show(fresh)
+      }
+    } catch (e) {
+      fail(e, recovery)
+    } finally {
+      setBusy(false)
     }
   }
 
@@ -118,7 +162,8 @@ export function useGame(): GameController {
     movable,
     destinations,
     busy,
-    error,
+    error: failure?.message ?? null,
+    retryLabel: failure?.label ?? 'Retry',
     pick,
     roll: () => {
       if (game?.phase === 'OPENING' || game?.phase === 'ROLLING') {
@@ -136,8 +181,18 @@ export function useGame(): GameController {
       if (turn?.mustPass) void submit([])
     },
     playAgain: () => void begin(),
-    retry,
+    retry: () => void retry(),
   }
+}
+
+/** The server refused the action: out of turn, stale or illegal. */
+function refused(e: unknown): boolean {
+  return e instanceof ApiError && (e.status === 409 || e.status === 422)
+}
+
+/** Whether two views of a game are waiting for the same action; any action that went through changes this. */
+function sameStep(a: GameView, b: GameView): boolean {
+  return a.turnNumber === b.turnNumber && a.phase === b.phase && a.toMove === b.toMove
 }
 
 function describe(e: unknown): string {
