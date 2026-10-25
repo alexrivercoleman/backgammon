@@ -82,8 +82,8 @@ make verify   # plus backend integration tests against a Testcontainers Postgres
 
 - **Engine**: every rule, run for both colours, plus a cross-check of the turn graph against brute-force
   enumeration on random positions, and 50 random games played to a finish.
-- **Backend integration**: schema constraints, persistence, the service (including simultaneous requests for the same turn), the
-  REST API, and seeded whole games played over HTTP and replayed from the log.
+- **Backend integration**: schema constraints, persistence, the service (including simultaneous requests for
+  the same turn), the REST API, and seeded whole games played over HTTP and replayed from the log.
 - **Frontend**: turn-graph walking and board geometry (Vitest).
 
 ## Development
@@ -109,11 +109,3 @@ Under `/api/games`; errors are [RFC 9457](https://www.rfc-editor.org/rfc/rfc9457
 A game's `phase` says what it's waiting for: `OPENING`, `ROLLING`, `MOVING` (with `dice` and the `turn` graph)
 or `FINISHED`. Board points are 24 signed counts (index 0 is point 1, positive is White). Moves look like
 `{"from": 13 | "bar", "to": 7 | "off", "die": 6}`.
-
-## Trade-offs and next steps
-
-- **Local-only setup**: database credentials are committed for local use, images are imported into k3d rather
-  than pushed to a registry, and there is no TLS.
-- **One game per page**: a refresh starts a new game. There is no way to resume, and no accounts or networked
-  play; the server is ready for that, but the UI is built for one shared screen.
-- **Not added**: CI, monitoring, and autoscaling, all left out to keep the scope small.
