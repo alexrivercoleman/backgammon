@@ -1,5 +1,6 @@
-# Local development services. The backend and frontend run on the host for now;
-# containerised app services are added in a later session.
+# Local stack. `make db-up` starts only Postgres, for hot-reload development with the backend and Vite running
+# on the host. `make compose-up` builds and runs everything at http://localhost:${APP_PORT:-8088}.
+# The credentials are for local use only.
 services:
   postgres:
     image: postgres:17-alpine
@@ -16,6 +17,32 @@ services:
       interval: 5s
       timeout: 3s
       retries: 10
+
+  backend:
+    build: ./backend
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/tavli
+      SPRING_DATASOURCE_USERNAME: tavli
+      SPRING_DATASOURCE_PASSWORD: tavli
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/actuator/health/readiness"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+      start_period: 10s
+
+  frontend:
+    build: ./frontend
+    environment:
+      BACKEND_URL: http://backend:8080
+    ports:
+      - "${APP_PORT:-8088}:80"
+    depends_on:
+      backend:
+        condition: service_healthy
 
 volumes:
   pgdata:

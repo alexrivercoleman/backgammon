@@ -1,4 +1,8 @@
-.PHONY: help test verify backend-test backend-verify frontend-test backend-build backend-run frontend-install frontend-build frontend-dev db-up db-down
+.PHONY: help test verify backend-test backend-verify frontend-test backend-build backend-run frontend-install frontend-build frontend-dev db-up db-down compose-up compose-down
+
+# Host port the containerised app is published on.
+APP_PORT ?= 8088
+export APP_PORT
 
 help:
 	@echo "Targets:"
@@ -9,6 +13,8 @@ help:
 	@echo "  frontend-build   Build the frontend bundle"
 	@echo "  frontend-dev     Run the Vite dev server"
 	@echo "  db-up / db-down  Start / stop local Postgres via docker compose"
+	@echo "  compose-up       Build and run the whole stack with docker compose on :$(APP_PORT)"
+	@echo "  compose-down     Stop the docker compose stack"
 
 test: backend-test frontend-test
 
@@ -46,4 +52,11 @@ db-up:
 	docker compose up -d postgres
 
 db-down:
+	docker compose stop postgres
+
+compose-up:
+	docker compose up -d --build --wait
+	@echo "Tavli is running at http://localhost:$(APP_PORT)"
+
+compose-down:
 	docker compose down
