@@ -83,7 +83,7 @@ export function HelpButton() {
 function Rule({ title, art, children }: { title: string; art: ReactNode; children: ReactNode }) {
   return (
     <section className="rule">
-      {art}
+      <div className="rule-art-box">{art}</div>
       <div>
         <h3>{title}</h3>
         <p>{children}</p>

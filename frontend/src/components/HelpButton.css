@@ -104,10 +104,16 @@
   color: var(--ink);
 }
 
+/* Every picture gets the same frame (the tallest diagram's shape), centred within it, so the titles and text
+   start at the same height on every panel. */
+.rule-art-box {
+  aspect-ratio: 240 / 152;
+}
+
 .rule-art {
   display: block;
   width: 100%;
-  height: auto;
+  height: 100%;
 }
 
 .rule-label {
