@@ -41,3 +41,45 @@
   color: #7a1e12;
   border: 1px solid #e9a99e;
 }
+
+/* Keep the whole board on screen: limit its width by the height left under the header and panel. */
+.table {
+  position: relative;
+  width: min(100%, calc((100vh - 290px) * 984 / 688));
+  margin: 0 auto;
+}
+
+.opening {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: center;
+  gap: 6px 16px;
+  margin: -6px auto 16px;
+  padding: 8px 18px;
+  width: fit-content;
+  max-width: 100%;
+  border-radius: 12px;
+  background: var(--panel);
+  border: 1px solid var(--panel-edge);
+  animation: slide-down 360ms ease-out both;
+}
+
+.opening .label {
+  font-size: 0.8rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+.opening em {
+  color: var(--ink-soft);
+}
+
+@keyframes slide-down {
+  from { transform: translateY(-8px); opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .opening { animation: none; }
+}

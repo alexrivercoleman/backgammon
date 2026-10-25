@@ -40,7 +40,7 @@
 /* Interaction: rings on movable and selected checkers, ghosts on destinations. */
 .board .checker-ring { fill: none; stroke-width: 3; }
 .board .checker.movable .checker-ring {
-  stroke: rgba(255, 236, 170, 0.85);
+  stroke: #e2a72e;
   animation: breathe 1.6s ease-in-out infinite;
 }
 .board .checker.selected .checker-ring { stroke: #ffd451; stroke-width: 4; }
@@ -76,4 +76,10 @@
 
 @media (prefers-reduced-motion: reduce) {
   .board .checker-ring, .board .ghost, .board .tray-target { animation: none; }
+}
+
+/* The flip turns the whole case about its horizontal axis. */
+.flipper {
+  transform-origin: 50% 50%;
+  backface-visibility: hidden;
 }
