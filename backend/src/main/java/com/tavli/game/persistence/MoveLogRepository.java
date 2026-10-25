@@ -1,7 +1,7 @@
 package com.tavli.game.persistence;
 
 import com.tavli.engine.Move;
-import com.tavli.engine.Opening;
+import com.tavli.engine.OpeningThrow;
 import com.tavli.engine.Player;
 import com.tavli.engine.Roll;
 import com.tavli.game.LogEntry;
@@ -29,7 +29,7 @@ public class MoveLogRepository {
         this.json = json;
     }
 
-    public void appendOpeningThrow(UUID gameId, Opening.Throw opening) {
+    public void appendOpeningThrow(UUID gameId, OpeningThrow opening) {
         append(gameId, Kind.OPENING_THROW, null, null, opening.white(), opening.black(), null);
     }
 

@@ -46,13 +46,21 @@ public class GameController {
         return view(games.play(id, request.turnNumber(), toMoves(request.moves())));
     }
 
+    @PostMapping("/{id}/roll")
+    public GameView roll(@PathVariable UUID id, @RequestBody RollRequest request) {
+        if (request.turnNumber() == null || request.player() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "turnNumber and player are required");
+        }
+        return view(games.roll(id, request.turnNumber(), request.player()));
+    }
+
     @GetMapping("/{id}/log")
     public List<LogEntryView> log(@PathVariable UUID id) {
         return games.log(id).stream().map(LogEntryView::of).toList();
     }
 
     private GameView view(Game game) {
-        return GameView.of(game, games.currentTurn(game).orElse(null));
+        return GameView.of(game, games.currentTurn(game).orElse(null), games.openingThrows(game));
     }
 
     private static List<Move> toMoves(List<MoveJson> moves) {

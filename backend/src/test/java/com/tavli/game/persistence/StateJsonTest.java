@@ -6,6 +6,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.tavli.engine.Board;
 import com.tavli.engine.GameState;
 import com.tavli.engine.Move;
+import com.tavli.engine.Phase;
 import com.tavli.engine.Player;
 import com.tavli.engine.Roll;
 import java.util.ArrayList;
@@ -22,24 +23,24 @@ class StateJsonTest {
 
     @Test
     void startingStateRoundTrips() {
-        GameState state = new GameState(Board.starting(), Player.BLACK, new Roll(3, 6), null);
+        GameState state = GameState.moving(Board.starting(), Player.BLACK, new Roll(3, 6));
 
         String stored = json.write(state);
 
         assertThat(json.read(stored)).isEqualTo(state);
-        assertThat(stored).contains("\"v\":1").contains("[-2,0,0,0,0,5,0,3,0,0,0,-5,5,0,0,0,-3,0,-5,0,0,0,0,2]");
+        assertThat(stored).contains("\"v\":2").contains("[-2,0,0,0,0,5,0,3,0,0,0,-5,5,0,0,0,-3,0,-5,0,0,0,0,2]");
     }
 
     @Test
     void barAndBorneOffCheckersRoundTrip() {
-        GameState state = new GameState(board(List.of(6, 5, -19, -4), 1, 2, 7, 9), Player.WHITE, new Roll(2, 2), null);
+        GameState state = GameState.moving(board(List.of(6, 5, -19, -4), 1, 2, 7, 9), Player.WHITE, new Roll(2, 2));
 
         assertThat(json.read(json.write(state))).isEqualTo(state);
     }
 
     @Test
     void finishedStateRoundTrips() {
-        GameState state = new GameState(board(List.of(-24, -3), 0, 0, 15, 12), Player.WHITE, null, Player.WHITE);
+        GameState state = GameState.finished(board(List.of(-24, -3), 0, 0, 15, 12), Player.WHITE);
 
         GameState read = json.read(json.write(state));
 
@@ -48,10 +49,29 @@ class StateJsonTest {
     }
 
     @Test
-    void rejectsUnknownVersionsAndInvalidBoards() {
-        String valid = json.write(new GameState(Board.starting(), Player.WHITE, new Roll(1, 2), null));
+    void openingAndRollingPhasesRoundTrip() {
+        GameState whiteThrew = new GameState(Phase.OPENING, Board.starting(), Player.BLACK, null, 4, null);
+        GameState rolling = GameState.awaitingRoll(Board.starting(), Player.WHITE);
 
-        assertThatThrownBy(() -> json.read(valid.replace("\"v\":1", "\"v\":2")))
+        assertThat(json.read(json.write(GameState.opening()))).isEqualTo(GameState.opening());
+        assertThat(json.read(json.write(whiteThrew))).isEqualTo(whiteThrew);
+        assertThat(json.read(json.write(rolling))).isEqualTo(rolling);
+    }
+
+    @Test
+    void readsVersionOneStatesAsWaitingForAMove() {
+        String v1 = "{\"v\":1,\"board\":{\"points\":[-2,0,0,0,0,5,0,3,0,0,0,-5,5,0,0,0,-3,0,-5,0,0,0,0,2],"
+                + "\"bar\":{\"WHITE\":0,\"BLACK\":0},\"off\":{\"WHITE\":0,\"BLACK\":0}},"
+                + "\"toMove\":\"BLACK\",\"roll\":[3,6],\"winner\":null}";
+
+        assertThat(json.read(v1)).isEqualTo(GameState.moving(Board.starting(), Player.BLACK, new Roll(3, 6)));
+    }
+
+    @Test
+    void rejectsUnknownVersionsAndInvalidBoards() {
+        String valid = json.write(GameState.moving(Board.starting(), Player.WHITE, new Roll(1, 2)));
+
+        assertThatThrownBy(() -> json.read(valid.replace("\"v\":2", "\"v\":9")))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("version");
         assertThatThrownBy(() -> json.read(valid.replace("[-2,", "[-3,")))

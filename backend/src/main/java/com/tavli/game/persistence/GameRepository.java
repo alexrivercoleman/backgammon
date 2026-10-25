@@ -32,7 +32,19 @@ public class GameRepository {
     }
 
     public Optional<Game> find(UUID id) {
-        return jdbc.sql("select turn_number, state from games where id = :id")
+        return find(id, "");
+    }
+
+    /**
+     * Like {@link #find} but locks the row until the transaction ends, so concurrent actions on one game run one
+     * after the other and each sees the state the previous one left.
+     */
+    public Optional<Game> findForUpdate(UUID id) {
+        return find(id, " for update");
+    }
+
+    private Optional<Game> find(UUID id, String lock) {
+        return jdbc.sql("select turn_number, state from games where id = :id" + lock)
                 .param("id", id)
                 .query((rs, row) -> new Game(id, rs.getInt("turn_number"), json.read(rs.getString("state"))))
                 .optional();

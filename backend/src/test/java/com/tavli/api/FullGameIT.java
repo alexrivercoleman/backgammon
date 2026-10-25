@@ -42,7 +42,7 @@ import tools.jackson.databind.node.ObjectNode;
 @Import(IntegrationTestConfiguration.class)
 class FullGameIT {
 
-    private static final int MAX_TURNS = 2_000;
+    private static final int MAX_ACTIONS = 5_000;
 
     @Autowired
     MockMvcTester mvc;
@@ -68,16 +68,21 @@ class FullGameIT {
 
         JsonNode game = json(mvc.post().uri("/api/games").exchange());
         String id = game.get("id").asString();
-        int turns = 0;
+        int actions = 0;
         while (game.get("status").asString().equals("IN_PROGRESS")) {
-            assertThat(++turns).as("game with seed %d is taking too long", seed).isLessThan(MAX_TURNS);
-            ArrayNode moves = randomPath(game.get("turn").get("nodes"), choices);
-            MvcTestResult result = mvc.post().uri("/api/games/{id}/turns", id)
+            assertThat(++actions).as("game with seed %d is taking too long", seed).isLessThan(MAX_ACTIONS);
+            ObjectNode request = mapper.createObjectNode().put("turnNumber", game.get("turnNumber").asInt());
+            String action;
+            if (game.get("phase").asString().equals("MOVING")) {
+                action = "turns";
+                request.set("moves", randomPath(game.get("turn").get("nodes"), choices));
+            } else {
+                action = "roll";
+                request.put("player", game.get("toMove").asString());
+            }
+            MvcTestResult result = mvc.post().uri("/api/games/{id}/" + action, id)
                     .contentType(MediaType.APPLICATION_JSON)
-                    .content(mapper.createObjectNode()
-                            .put("turnNumber", game.get("turnNumber").asInt())
-                            .set("moves", moves)
-                            .toString())
+                    .content(request.toString())
                     .exchange();
             assertThat(result).hasStatusOk();
             game = json(result);
@@ -107,8 +112,8 @@ class FullGameIT {
     }
 
     /**
-     * Rebuilds the game from its log: the opening throws and rolls supply the dice, and each turn is replayed
-     * through a fresh engine. Also checks the log's shape: rolls and turns alternate with increasing turn
+     * Rebuilds the game from its log: the opening throws and rolls supply the dice for a fresh engine's rolls,
+     * and each turn is replayed. Also checks the log's shape: rolls and turns alternate with increasing turn
      * numbers and alternating players.
      */
     private static GameState replay(List<LogEntry> log) {
@@ -116,37 +121,42 @@ class FullGameIT {
                 .containsExactlyElementsOf(IntStream.rangeClosed(1, log.size()).boxed().toList());
 
         Deque<Integer> diceValues = new ArrayDeque<>();
+        Dice logged = diceValues::pop;
+        TavliEngine engine = new TavliEngine(logged);
+        GameState state = engine.start();
+
         Iterator<LogEntry> entries = log.iterator();
         LogEntry entry = entries.next();
         while (entry.kind() == Kind.OPENING_THROW) {
             diceValues.addAll(entry.dice());
+            state = engine.roll(engine.roll(state).state()).state();
             entry = entries.next();
         }
-        Dice logged = diceValues::pop;
-        TavliEngine engine = new TavliEngine(logged);
-        GameState state = engine.start().state();
 
+        // Turn 1's roll repeats the deciding opening throw, so it is already in the state.
         int expectedTurn = 1;
         while (true) {
             assertThat(entry.kind()).isEqualTo(Kind.ROLL);
             assertThat(entry.turnNumber()).isEqualTo(expectedTurn);
             assertThat(entry.player()).isEqualTo(state.toMove());
+            if (expectedTurn > 1) {
+                diceValues.addAll(entry.dice());
+                state = engine.roll(state).state();
+            }
             assertThat(state.roll()).isEqualTo(new Roll(entry.dice().get(0), entry.dice().get(1)));
 
             LogEntry turn = entries.next();
             assertThat(turn.kind()).isEqualTo(Kind.TURN);
             assertThat(turn.turnNumber()).isEqualTo(expectedTurn);
             assertThat(turn.player()).isEqualTo(state.toMove());
-            if (entries.hasNext()) {
-                entry = entries.next();
-                diceValues.addAll(entry.dice());
-            }
             state = engine.play(state, turn.moves());
             expectedTurn++;
             if (state.isOver()) {
                 assertThat(entries.hasNext()).isFalse();
+                assertThat(diceValues).isEmpty();
                 return state;
             }
+            entry = entries.next();
         }
     }
 

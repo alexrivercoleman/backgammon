@@ -1,6 +1,7 @@
 package com.tavli.api;
 
 import com.tavli.engine.IllegalTurnException;
+import com.tavli.game.ActionNotAllowedException;
 import com.tavli.game.GameFinishedException;
 import com.tavli.game.GameNotFoundException;
 import com.tavli.game.StaleTurnException;
@@ -30,6 +31,11 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(GameFinishedException.class)
     ProblemDetail finished(GameFinishedException e) {
         return problem(HttpStatus.CONFLICT, "Game is over", e);
+    }
+
+    @ExceptionHandler(ActionNotAllowedException.class)
+    ProblemDetail notAllowed(ActionNotAllowedException e) {
+        return problem(HttpStatus.CONFLICT, "Not allowed now", e);
     }
 
     @ExceptionHandler(IllegalTurnException.class)

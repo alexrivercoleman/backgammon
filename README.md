@@ -53,10 +53,16 @@ details.
 
 | Method | Path                    | Body                       | Result                                           |
 |--------|-------------------------|----------------------------|--------------------------------------------------|
-| POST   | `/api/games`            |                            | `201` new game (opening throws already rolled)   |
+| POST   | `/api/games`            |                            | `201` new game at the opening; nothing rolled yet |
 | GET    | `/api/games/{id}`       |                            | `200` game                                       |
-| POST   | `/api/games/{id}/turns` | `{"turnNumber", "moves"}`  | `200` game after the turn; `400`, `404`, `409` stale or finished, `422` illegal |
+| POST   | `/api/games/{id}/roll`  | `{"turnNumber", "player"}` | `200` game after the roll; `400`, `404`, `409` not this player's roll, stale or finished |
+| POST   | `/api/games/{id}/turns` | `{"turnNumber", "moves"}`  | `200` game after the turn; `400`, `404`, `409` not rolled yet, stale or finished, `422` illegal |
 | GET    | `/api/games/{id}/log`   |                            | `200` every opening throw, roll and turn in order |
+
+- **Phases**: `phase` says what the game is waiting for. `OPENING`: `toMove` throws their single opening die
+  (WHITE first; `openingDie` holds WHITE's die until BLACK throws; ties start over, and `openingThrows` lists
+  the rounds). `ROLLING`: `toMove` must roll. `MOVING`: `dice` and `turn` are present. `FINISHED`: `winner` is
+  set. The higher opening thrower plays both opening dice without rolling again.
 
 - **Board**: `points` has 24 signed counts, index 0 = point 1; positive is WHITE, negative is BLACK. WHITE moves
   24 → 1 (home 1–6), BLACK moves 1 → 24 (home 19–24). `bar` and `off` count checkers per player.

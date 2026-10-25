@@ -52,21 +52,46 @@ class GameApiIT {
     }
 
     @Test
-    void createReturnsTheNewGameWithItsTurnGraph() {
-        dice.script(3, 6);
-
+    void createStartsAtTheOpeningWithNothingRolled() {
         MvcTestResult result = mvc.post().uri("/api/games").exchange();
 
         assertThat(result).hasStatus(HttpStatus.CREATED);
         JsonNode game = json(result);
         assertThat(result.getResponse().getHeader("Location")).isEqualTo("/api/games/" + game.get("id").asString());
         assertThat(game.get("status").asString()).isEqualTo("IN_PROGRESS");
+        assertThat(game.get("phase").asString()).isEqualTo("OPENING");
         assertThat(game.get("turnNumber").asInt()).isEqualTo(1);
-        assertThat(game.get("toMove").asString()).isEqualTo("BLACK");
-        assertThat(ints(game.get("dice"))).containsExactly(3, 6);
+        assertThat(game.get("toMove").asString()).isEqualTo("WHITE");
+        assertThat(game.get("dice").isNull()).isTrue();
+        assertThat(game.get("openingDie").isNull()).isTrue();
+        assertThat(game.get("openingThrows")).isEmpty();
+        assertThat(game.get("turn").isNull()).isTrue();
         assertThat(game.get("winner").isNull()).isTrue();
         assertThat(ints(game.get("board").get("points"))).isEqualTo(Board.starting().points());
         assertThat(game.get("board").get("bar").get("WHITE").asInt()).isZero();
+    }
+
+    @Test
+    void eachPlayerRollsTheirOpeningDieAndTheWinnerGetsTheTurnGraph() {
+        dice.script(2, 2, 3, 6);
+        String id = createdId();
+
+        JsonNode whiteThrew = json(roll(id, 1, "WHITE"));
+        assertThat(whiteThrew.get("openingDie").asInt()).isEqualTo(2);
+        assertThat(whiteThrew.get("toMove").asString()).isEqualTo("BLACK");
+
+        JsonNode tie = json(roll(id, 1, "BLACK"));
+        assertThat(tie.get("phase").asString()).isEqualTo("OPENING");
+        assertThat(tie.get("toMove").asString()).isEqualTo("WHITE");
+        assertThat(tie.get("openingDie").isNull()).isTrue();
+        assertThat(tie.get("openingThrows").toString()).isEqualTo("[[2,2]]");
+
+        roll(id, 1, "WHITE");
+        JsonNode game = json(roll(id, 1, "BLACK"));
+        assertThat(game.get("phase").asString()).isEqualTo("MOVING");
+        assertThat(game.get("toMove").asString()).isEqualTo("BLACK");
+        assertThat(ints(game.get("dice"))).containsExactly(3, 6);
+        assertThat(game.get("openingThrows").toString()).isEqualTo("[[2,2],[3,6]]");
 
         JsonNode turn = game.get("turn");
         assertThat(turn.get("mustPass").asBoolean()).isFalse();
@@ -81,8 +106,7 @@ class GameApiIT {
 
     @Test
     void getReturnsTheStoredGame() {
-        dice.script(3, 6);
-        String id = json(mvc.post().uri("/api/games").exchange()).get("id").asString();
+        String id = createdId();
 
         MvcTestResult result = mvc.get().uri("/api/games/{id}", id).exchange();
 
@@ -100,9 +124,9 @@ class GameApiIT {
     }
 
     @Test
-    void aLegalTurnAdvancesTheGame() {
-        dice.script(3, 1, 5, 2);
-        String id = createdId();
+    void aLegalTurnPassesTheDiceToTheOpponentToRoll() {
+        dice.script(3, 1);
+        String id = startedId();
 
         MvcTestResult result = submit(id, 1, """
                 [{"from": 8, "to": 5, "die": 3}, {"from": 6, "to": 5, "die": 1}]""");
@@ -110,15 +134,44 @@ class GameApiIT {
         assertThat(result).hasStatusOk();
         JsonNode game = json(result);
         assertThat(game.get("turnNumber").asInt()).isEqualTo(2);
+        assertThat(game.get("phase").asString()).isEqualTo("ROLLING");
         assertThat(game.get("toMove").asString()).isEqualTo("BLACK");
-        assertThat(ints(game.get("dice"))).containsExactly(5, 2);
+        assertThat(game.get("dice").isNull()).isTrue();
+        assertThat(game.get("turn").isNull()).isTrue();
+        assertThat(game.get("openingThrows")).isEmpty();
         assertThat(game.get("board").get("points").get(4).asInt()).isEqualTo(2);
+
+        dice.script(5, 2);
+        JsonNode rolled = json(roll(id, 2, "BLACK"));
+        assertThat(rolled.get("phase").asString()).isEqualTo("MOVING");
+        assertThat(ints(rolled.get("dice"))).containsExactly(5, 2);
+        assertThat(rolled.get("turn").get("nodes")).isNotEmpty();
+    }
+
+    @Test
+    void rollingOrMovingOutOfTurnConflicts() {
+        String id = createdId();
+
+        MvcTestResult blackFirst = roll(id, 1, "BLACK");
+        assertThat(blackFirst).hasStatus(HttpStatus.CONFLICT);
+        assertThat(json(blackFirst).get("title").asString()).isEqualTo("Not allowed now");
+        assertThat(submit(id, 1, "[]")).hasStatus(HttpStatus.CONFLICT);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"{}", "{\"turnNumber\": 1}", "{\"player\": \"WHITE\"}",
+            "{\"turnNumber\": 1, \"player\": \"RED\"}"})
+    void malformedRollRequestsAreBadRequests(String body) {
+        String id = createdId();
+
+        assertThat(mvc.post().uri("/api/games/{id}/roll", id).contentType(MediaType.APPLICATION_JSON).content(body)
+                .exchange()).hasStatus(HttpStatus.BAD_REQUEST);
     }
 
     @Test
     void anIllegalTurnIsUnprocessableAndChangesNothing() {
         dice.script(6, 5);
-        String id = createdId();
+        String id = startedId();
 
         MvcTestResult result = submit(id, 1, """
                 [{"from": 13, "to": 7, "die": 6}]""");
@@ -130,8 +183,8 @@ class GameApiIT {
 
     @Test
     void aStaleTurnNumberConflicts() {
-        dice.script(3, 1, 5, 2);
-        String id = createdId();
+        dice.script(3, 1);
+        String id = startedId();
         String turn = """
                 [{"from": 8, "to": 5, "die": 3}, {"from": 6, "to": 5, "die": 1}]""";
         submit(id, 1, turn);
@@ -154,7 +207,7 @@ class GameApiIT {
     })
     void malformedRequestsAreBadRequests(String body) {
         dice.script(3, 1);
-        String id = createdId();
+        String id = startedId();
 
         MvcTestResult result = mvc.post().uri("/api/games/{id}/turns", id)
                 .contentType(MediaType.APPLICATION_JSON).content(body).exchange();
@@ -165,7 +218,7 @@ class GameApiIT {
     @Test
     void barEntryUsesTheBarKeyword() {
         Board board = board().whiteBar(1).white(3, 1).white(1, 13).black(13, 15).build();
-        String id = saved(new GameState(board, Player.WHITE, new Roll(5, 3), null), 12);
+        String id = saved(GameState.moving(board, Player.WHITE, new Roll(5, 3)), 12);
         dice.script(4, 2);
 
         JsonNode root = json(mvc.get().uri("/api/games/{id}", id).exchange()).get("turn").get("nodes").get(0);
@@ -184,7 +237,7 @@ class GameApiIT {
     void aBlockedPlayerPasses() {
         Board blocked = board().whiteBar(1).white(13, 5)
                 .black(19, 2).black(20, 2).black(21, 2).black(22, 2).black(23, 2).black(24, 2).build();
-        String id = saved(new GameState(blocked, Player.WHITE, new Roll(6, 5), null), 4);
+        String id = saved(GameState.moving(blocked, Player.WHITE, new Roll(6, 5)), 4);
         dice.script(2, 1);
 
         JsonNode turn = json(mvc.get().uri("/api/games/{id}", id).exchange()).get("turn");
@@ -201,7 +254,7 @@ class GameApiIT {
     @Test
     void theWinningTurnFinishesTheGame() {
         Board nearlyDone = board().white(3, 1).white(1, 1).black(13, 15).build();
-        String id = saved(new GameState(nearlyDone, Player.WHITE, new Roll(3, 1), null), 30);
+        String id = saved(GameState.moving(nearlyDone, Player.WHITE, new Roll(3, 1)), 30);
 
         MvcTestResult result = submit(id, 30, """
                 [{"from": 3, "to": "off", "die": 3}, {"from": 1, "to": "off", "die": 1}]""");
@@ -224,8 +277,11 @@ class GameApiIT {
     void theLogListsOpeningThrowsRollsAndTurns() {
         dice.script(2, 2, 3, 1, 5, 2);
         String id = createdId();
+        startedFrom(id); // 2-2: a tie
+        startedFrom(id); // 3-1: White starts
         submit(id, 1, """
                 [{"from": 8, "to": 5, "die": 3}, {"from": 6, "to": 5, "die": 1}]""");
+        roll(id, 2, "BLACK");
 
         JsonNode log = json(mvc.get().uri("/api/games/{id}/log", id).exchange());
 
@@ -243,6 +299,25 @@ class GameApiIT {
 
     private String createdId() {
         return json(mvc.post().uri("/api/games").exchange()).get("id").asString();
+    }
+
+    /** Creates a game and throws the opening dice (scripted by the caller) through the API. */
+    private String startedId() {
+        return startedFrom(createdId());
+    }
+
+    /** Throws one opening round: White's die, then Black's. */
+    private String startedFrom(String id) {
+        roll(id, 1, "WHITE");
+        roll(id, 1, "BLACK");
+        return id;
+    }
+
+    private MvcTestResult roll(String id, int turnNumber, String player) {
+        return mvc.post().uri("/api/games/{id}/roll", id)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"turnNumber\": " + turnNumber + ", \"player\": \"" + player + "\"}")
+                .exchange();
     }
 
     private String saved(GameState state, int turnNumber) {

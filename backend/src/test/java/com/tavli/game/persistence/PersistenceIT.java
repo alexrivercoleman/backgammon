@@ -7,7 +7,7 @@ import com.tavli.IntegrationTestConfiguration;
 import com.tavli.engine.Board;
 import com.tavli.engine.GameState;
 import com.tavli.engine.Move;
-import com.tavli.engine.Opening;
+import com.tavli.engine.OpeningThrow;
 import com.tavli.engine.Player;
 import com.tavli.engine.Roll;
 import com.tavli.game.Game;
@@ -32,7 +32,7 @@ class PersistenceIT {
     MoveLogRepository log;
 
     private static Game newGame() {
-        return new Game(UUID.randomUUID(), 1, new GameState(Board.starting(), Player.WHITE, new Roll(6, 1), null));
+        return new Game(UUID.randomUUID(), 1, GameState.moving(Board.starting(), Player.WHITE, new Roll(6, 1)));
     }
 
     @Test
@@ -49,7 +49,7 @@ class PersistenceIT {
     void updateAppliesOnlyFromTheExpectedTurn() {
         Game game = newGame();
         games.insert(game);
-        Game next = new Game(game.id(), 2, new GameState(Board.starting(), Player.BLACK, new Roll(2, 2), null));
+        Game next = new Game(game.id(), 2, GameState.moving(Board.starting(), Player.BLACK, new Roll(2, 2)));
 
         assertThat(games.update(next, 1)).isTrue();
         assertThat(games.update(next, 1)).isFalse();
@@ -62,8 +62,8 @@ class PersistenceIT {
         games.insert(game);
         List<Move> moves = List.of(new Move(Move.BAR, 20, 5), new Move(3, Move.OFF, 4));
 
-        log.appendOpeningThrow(game.id(), new Opening.Throw(4, 4));
-        log.appendOpeningThrow(game.id(), new Opening.Throw(6, 1));
+        log.appendOpeningThrow(game.id(), new OpeningThrow(4, 4));
+        log.appendOpeningThrow(game.id(), new OpeningThrow(6, 1));
         log.appendRoll(game.id(), 1, Player.WHITE, new Roll(6, 1));
         log.appendTurn(game.id(), 1, Player.WHITE, moves);
         log.appendTurn(game.id(), 2, Player.BLACK, List.of());

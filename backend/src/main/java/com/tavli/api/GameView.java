@@ -2,6 +2,8 @@ package com.tavli.api;
 
 import com.tavli.engine.Board;
 import com.tavli.engine.GameState;
+import com.tavli.engine.OpeningThrow;
+import com.tavli.engine.Phase;
 import com.tavli.engine.Player;
 import com.tavli.engine.TurnEdge;
 import com.tavli.engine.TurnNode;
@@ -13,13 +15,19 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * A game as sent to the client: the current position plus, while the game is in progress, every legal way to
- * play the current roll as a graph the client can step through without knowing the rules.
+ * A game as sent to the client: the current position, what the game is waiting for, and, while a player is
+ * moving, every legal way to play their roll as a graph the client can step through without knowing the rules.
  *
- * @param turn null once the game is finished
+ * @param phase         OPENING (each player throws one die), ROLLING, MOVING or FINISHED
+ * @param toMove        who acts next: in the OPENING, whose opening die is to be thrown
+ * @param dice          the roll to play; only while MOVING
+ * @param openingDie    WHITE's opening die while BLACK has yet to throw theirs; otherwise null
+ * @param openingThrows the opening rounds so far as {@code [white, black]}, ties included; empty after turn 1
+ * @param turn          the turn graph; only while MOVING
  */
-public record GameView(UUID id, String status, int turnNumber, Player toMove, List<Integer> dice, Player winner,
-                       BoardView board, TurnView turn) {
+public record GameView(UUID id, String status, Phase phase, int turnNumber, Player toMove, List<Integer> dice,
+                       Integer openingDie, List<List<Integer>> openingThrows, Player winner, BoardView board,
+                       TurnView turn) {
 
     /**
      * @param points signed checker counts for points 1..24 (index 0 is point 1): positive WHITE, negative BLACK
@@ -58,14 +66,17 @@ public record GameView(UUID id, String status, int turnNumber, Player toMove, Li
         }
     }
 
-    static GameView of(Game game, TurnPlan plan) {
+    static GameView of(Game game, TurnPlan plan, List<OpeningThrow> openingThrows) {
         GameState state = game.state();
         return new GameView(
                 game.id(),
                 state.isOver() ? "FINISHED" : "IN_PROGRESS",
+                state.phase(),
                 game.turnNumber(),
                 state.toMove(),
                 state.roll() == null ? null : List.of(state.roll().first(), state.roll().second()),
+                state.openingDie(),
+                openingThrows.stream().map(t -> List.of(t.white(), t.black())).toList(),
                 state.winner(),
                 BoardView.of(state.board()),
                 plan == null ? null : TurnView.of(plan));

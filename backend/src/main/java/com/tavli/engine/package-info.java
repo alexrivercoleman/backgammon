@@ -10,6 +10,9 @@
  *
  * <h2>Rule decisions</h2>
  * <ul>
+ *   <li>Players roll their own dice: nothing is rolled until the player to act asks (see {@link
+ *       com.tavli.engine.Phase}). In the opening each player throws one die, WHITE first; ties are thrown again,
+ *       and the higher thrower plays both opening dice as their first roll.</li>
  *   <li>If no move is possible, the only legal turn is the empty one; the UI offers a "pass".</li>
  *   <li>A checker hit while its owner is bearing off must re-enter and come home before bearing off resumes.</li>
  *   <li>Bearing off with a die higher than the highest occupied point is permitted, not mandatory.</li>
