@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { ApiError, createGame, getGame, rollDice, submitTurn } from '../api/client'
 import type { From, GameView, Move, NodeView, To } from '../api/types'
+import { linkedGameId, linkTo } from './link'
 import { currentNode, sources, startWalk, step, targets, undo, type TargetOption, type TurnWalk } from './turn'
 
 /** Somewhere on the board the player can click: a point, the bar or the bear-off tray. */
@@ -56,6 +57,9 @@ export function useGame(): GameController {
     setGame(next)
     setWalk(startWalk())
     setSelected(null)
+    if (linkedGameId(window.location.search) !== next.id) {
+      window.history.replaceState(null, '', linkTo(window.location.search, next.id))
+    }
   }, [])
 
   /** Reports an error; `recovery` applies unless the server lost the game or refused the action. */
@@ -67,11 +71,12 @@ export function useGame(): GameController {
     }
   }, [])
 
-  const begin = useCallback(async () => {
+  /** Reopens game `id` if the server still has it; otherwise, or with no id, starts a new game. */
+  const begin = useCallback(async (id: string | null = null) => {
     setBusy(true)
     setFailure(null)
     try {
-      show(await createGame())
+      show(await (id ? reopen(id) : createGame()))
     } catch (e) {
       setFailure({ message: describe(e), label: 'Retry', recovery: { kind: 'new-game' } })
     } finally {
@@ -79,12 +84,12 @@ export function useGame(): GameController {
     }
   }, [show])
 
-  // Create exactly one game on load, even though StrictMode runs effects twice in development.
+  // Open exactly one game on load, even though StrictMode runs effects twice in development.
   const started = useRef(false)
   useEffect(() => {
     if (!started.current) {
       started.current = true
-      void begin()
+      void begin(linkedGameId(window.location.search))
     }
   }, [begin])
 
@@ -134,7 +139,8 @@ export function useGame(): GameController {
     if (!failure || busy) return
     const { recovery } = failure
     if (!game || recovery.kind === 'new-game') {
-      await begin()
+      // Before any game has loaded, try the linked one again rather than abandoning it.
+      await begin(game ? null : linkedGameId(window.location.search))
       return
     }
     setBusy(true)
@@ -182,6 +188,16 @@ export function useGame(): GameController {
     },
     playAgain: () => void begin(),
     retry: () => void retry(),
+  }
+}
+
+/** Loads game `id`, or starts a new game if the server no longer has it. */
+async function reopen(id: string): Promise<GameView> {
+  try {
+    return await getGame(id)
+  } catch (e) {
+    if (e instanceof ApiError && e.status === 404) return createGame()
+    throw e
   }
 }
 
