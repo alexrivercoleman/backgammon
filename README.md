@@ -1,7 +1,6 @@
 # Tavli Portes
 
-Portes, the Greek form of backgammon, for two players taking turns on one screen. The game is saved as you
-play and its link is in the address bar, so a refresh picks up where you left off.
+Portes, the Greek form of backgammon, for two players taking turns on one screen.
 
 ## Quick start
 
