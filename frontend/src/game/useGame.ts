@@ -139,6 +139,7 @@ export function useGame(): GameController {
 }
 
 function describe(e: unknown): string {
-  if (e instanceof ApiError) return e.message
+  // A 5xx without problem details comes from the dev proxy when the backend is down.
+  if (e instanceof ApiError && (e.problem || e.status < 500)) return e.message
   return 'Could not reach the server. Is the backend running?'
 }

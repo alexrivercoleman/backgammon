@@ -22,11 +22,29 @@ Requires Java 25, Node 24 and Docker.
 ```sh
 make db-up           # start Postgres (docker compose)
 make backend-run     # start the server on :8080; Flyway migrates the schema on startup
-make frontend-dev    # start the Vite dev server
+make frontend-dev    # start the Vite dev server on :5173 (proxies /api to :8080)
 
-make test            # unit tests (no Docker needed)
-make verify          # unit + integration tests (Testcontainers Postgres; Docker must be running)
+make test            # backend and frontend unit tests (no Docker needed)
+make verify          # backend unit + integration tests (Testcontainers Postgres; Docker must be running)
 ```
+
+Then open http://localhost:5173. Each page load starts a new game.
+
+## Playing
+
+Two players share the screen. The board is always drawn from the point of view of the player to move:
+their home is bottom-right next to the bear-off tray, and the board flips when the turn passes.
+
+1. Click a checker with a gold ring to pick it up; dashed rings show where it can go (red if it hits a blot,
+   the tray if it can bear off).
+2. Click a destination. Repeat for each die; played dice are dimmed. **Undo** takes back one move.
+3. **Confirm** once the turn is complete, or **Pass** when no move is possible.
+
+The UI only follows the turn graph the server sends; it never decides what is legal. When bearing off could
+use either die, a click uses the lower one so the higher stays available (undo to choose otherwise).
+
+Frontend layout: `src/api` (typed client), `src/game` (turn walking and the `useGame` hook), `src/board`
+(SVG board, geometry and flip animation), `src/components` (panel, dice, opening banner, game over).
 
 ## API
 
