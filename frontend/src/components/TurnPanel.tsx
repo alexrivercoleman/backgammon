@@ -37,7 +37,8 @@ export function TurnPanel({ controller }: { controller: GameController }) {
     title = `${NAMES[game.toMove]}, roll for the start`
     hint = openingHint(game)
     dice = <OpeningDice game={game} />
-    actions = <RollButton label="Roll die" onRoll={controller.roll} busy={busy} />
+    actions = <RollButton label="Roll die" onRoll={controller.roll} busy={busy}
+      key={`${game.toMove}${game.openingThrows.length}`} />
   } else {
     title = `${NAMES[game.toMove]} to roll`
     hint = 'Roll the dice to start your turn.'
@@ -65,7 +66,10 @@ export function TurnPanel({ controller }: { controller: GameController }) {
   )
 }
 
-/** Focused on appearance, so the player whose turn it is can roll with Enter or Space. */
+/**
+ * Focused on appearance, so the player whose turn it is can roll with Enter or Space. In the opening, one roll
+ * follows another, so the caller keys it by the throw to remount it (and focus it again) each time.
+ */
 function RollButton({ label, onRoll, busy }: { label: string; onRoll: () => void; busy: boolean }) {
   return (
     <button type="button" className="primary roll" onClick={onRoll} disabled={busy} autoFocus>
