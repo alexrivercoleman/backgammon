@@ -238,14 +238,17 @@ function Hinge({ y }: { y: number }) {
 function Defs() {
   return (
     <defs>
-      {/* Wood grain: horizontally stretched noise laid over the wood colour at low opacity. */}
+      {/* Wood grain: horizontally stretched noise laid over the wood colour at low opacity, clipped to the
+          shape so it doesn't fill the square corners of a rounded rect. */}
       <filter id="grain-field" x="0" y="0" width="100%" height="100%">
         <feTurbulence type="fractalNoise" baseFrequency="0.004 0.09" numOctaves="3" seed="3" />
         <feColorMatrix type="matrix" values="0 0 0 0 0.35  0 0 0 0 0.2  0 0 0 0 0.08  0 0 0 0.55 0" />
+        <feComposite in2="SourceAlpha" operator="in" />
       </filter>
       <filter id="grain-frame" x="0" y="0" width="100%" height="100%">
         <feTurbulence type="fractalNoise" baseFrequency="0.006 0.05" numOctaves="2" seed="11" />
         <feColorMatrix type="matrix" values="0 0 0 0 0.1  0 0 0 0 0.05  0 0 0 0 0.02  0 0 0 0.7 0" />
+        <feComposite in2="SourceAlpha" operator="in" />
       </filter>
       <filter id="aura" x="-50%" y="-50%" width="200%" height="200%">
         <feGaussianBlur in="SourceGraphic" stdDeviation="3.5" result="blur" />
