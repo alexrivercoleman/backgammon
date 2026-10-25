@@ -17,7 +17,9 @@
 .board .point-dark { fill: #6b3a1f; }
 .board .point { stroke: rgba(40, 20, 8, 0.35); stroke-width: 1; }
 
-.board .hinge line { stroke: #6b4c17; stroke-width: 1.5; }
+.board .fold { stroke: #1e1108; stroke-width: 2.5; }
+.board .fold-light { stroke: rgba(255, 228, 185, 0.14); stroke-width: 1; }
+.board .hinge-barrel { fill: url(#barrel); stroke: #5a3f12; stroke-width: 0.8; }
 .board .hinge circle { fill: #6b4c17; }
 
 .board .checker-groove { fill: none; stroke-width: 1.5; }
@@ -38,12 +40,12 @@
 }
 
 /* Interaction: rings on movable and selected checkers, ghosts on destinations. */
-.board .checker-ring { fill: none; stroke-width: 3; }
+.board .checker-ring { fill: none; stroke-width: 4; }
 .board .checker.movable .checker-ring {
-  stroke: #e2a72e;
+  stroke: #5aaeff;
   animation: breathe 1.6s ease-in-out infinite;
 }
-.board .checker.selected .checker-ring { stroke: #ffd451; stroke-width: 4; }
+.board .checker.selected .checker-ring { stroke: #2b8cff; stroke-width: 6; }
 .board .checker { transition: transform 140ms ease-out; transform-box: fill-box; transform-origin: center; }
 .board .checker.selected { transform: translateY(-3px) scale(1.06); }
 

@@ -65,6 +65,10 @@ export function Board({ board, mover, movable = [], selected = null, destination
       ))}
       <rect className="bar" x={BAR_X} y={0} width={BAR_WIDTH} height={HEIGHT} />
       <rect className="grain" x={BAR_X} y={0} width={BAR_WIDTH} height={HEIGHT} filter="url(#grain-frame)" />
+      {/* The fold: where the two halves of the case meet. */}
+      <line className="fold" x1={BAR_X + BAR_WIDTH / 2} y1={0} x2={BAR_X + BAR_WIDTH / 2} y2={HEIGHT} />
+      <line className="fold-light" x1={BAR_X + BAR_WIDTH / 2 + 1.5} y1={0} x2={BAR_X + BAR_WIDTH / 2 + 1.5}
+        y2={HEIGHT} />
       <Hinge y={FIELD_TOP + 70} />
       <Hinge y={FIELD_BOTTOM - 70} />
       <rect className="tray" x={TRAY_X} y={FIELD_TOP} width={TRAY_WIDTH} height={FIELD_HEIGHT} rx={6} />
@@ -203,7 +207,7 @@ function Checker({ x, y, owner, label, state }: CheckerProps) {
   const kind = owner.toLowerCase()
   return (
     <g className={`checker checker-${kind}${state ? ` ${state}` : ''}`}>
-      {state && <circle className="checker-ring" cx={x} cy={y} r={CHECKER_RADIUS + 4} />}
+      {state && <circle className="checker-ring" cx={x} cy={y} r={CHECKER_RADIUS + 4} filter="url(#aura)" />}
       <circle cx={x} cy={y} r={CHECKER_RADIUS} fill={`url(#checker-${kind})`} filter="url(#shadow)" />
       <circle className="checker-groove" cx={x} cy={y} r={CHECKER_RADIUS * 0.62} />
       {label !== null && (
@@ -219,7 +223,8 @@ function Hinge({ y }: { y: number }) {
   return (
     <g className="hinge">
       <rect x={BAR_X + 14} y={y - 22} width={BAR_WIDTH - 28} height={44} rx={5} fill="url(#brass)" />
-      <line x1={BAR_X + BAR_WIDTH / 2} y1={y - 22} x2={BAR_X + BAR_WIDTH / 2} y2={y + 22} />
+      {/* The barrel the two leaves turn on, sitting on the fold. */}
+      <rect className="hinge-barrel" x={BAR_X + BAR_WIDTH / 2 - 3.5} y={y - 25} width={7} height={50} rx={3.5} />
       {[-12, 12].map((dy) => (
         <circle key={`l${dy}`} cx={BAR_X + 22} cy={y + dy} r={2.2} />
       ))}
@@ -242,6 +247,14 @@ function Defs() {
         <feTurbulence type="fractalNoise" baseFrequency="0.006 0.05" numOctaves="2" seed="11" />
         <feColorMatrix type="matrix" values="0 0 0 0 0.1  0 0 0 0 0.05  0 0 0 0 0.02  0 0 0 0.7 0" />
       </filter>
+      <filter id="aura" x="-50%" y="-50%" width="200%" height="200%">
+        <feGaussianBlur in="SourceGraphic" stdDeviation="3.5" result="blur" />
+        <feMerge>
+          <feMergeNode in="blur" />
+          <feMergeNode in="blur" />
+          <feMergeNode in="SourceGraphic" />
+        </feMerge>
+      </filter>
       <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%">
         <feDropShadow dx="1.5" dy="2.5" stdDeviation="2" floodColor="#1a0e05" floodOpacity="0.45" />
       </filter>
@@ -255,6 +268,11 @@ function Defs() {
         <stop offset="65%" stopColor="#2f2f2f" />
         <stop offset="100%" stopColor="#1b1b1b" />
       </radialGradient>
+      <linearGradient id="barrel" x1="0" y1="0" x2="1" y2="0">
+        <stop offset="0%" stopColor="#7a5a1c" />
+        <stop offset="45%" stopColor="#f0d27e" />
+        <stop offset="100%" stopColor="#6b4c17" />
+      </linearGradient>
       <linearGradient id="brass" x1="0" y1="0" x2="1" y2="1">
         <stop offset="0%" stopColor="#e9c46a" />
         <stop offset="50%" stopColor="#b8892f" />

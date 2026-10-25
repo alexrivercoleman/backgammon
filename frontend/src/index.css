@@ -1,6 +1,6 @@
 :root {
-  --cloth: #f7f4ec;
-  --cloth-check: rgba(31, 78, 140, 0.32);
+  --cloth: #f6f4ee;
+  --cloth-check: rgba(146, 182, 218, 0.36);
   --ink: #1f2a3a;
   --ink-soft: #4b5568;
   --aegean: #1f4e8c;
@@ -13,8 +13,8 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --cloth: #121b2a;
-    --cloth-check: rgba(70, 120, 190, 0.22);
+    --cloth: #232c38;
+    --cloth-check: rgba(150, 180, 214, 0.13);
     --ink: #ece6d8;
     --ink-soft: #b7b0a2;
     --aegean: #7fb0ee;
