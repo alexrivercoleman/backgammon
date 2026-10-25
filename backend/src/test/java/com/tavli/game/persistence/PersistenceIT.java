@@ -11,6 +11,7 @@ import com.tavli.engine.OpeningThrow;
 import com.tavli.engine.Player;
 import com.tavli.engine.Roll;
 import com.tavli.game.Game;
+import com.tavli.game.GameNotFoundException;
 import com.tavli.game.LogEntry;
 import com.tavli.game.StaleTurnException;
 import com.tavli.game.LogEntry.Kind;
@@ -56,7 +57,7 @@ class PersistenceIT {
 
         assertThatThrownBy(() -> games.update(next, 1)).isInstanceOf(StaleTurnException.class);
         assertThatThrownBy(() -> games.update(new Game(UUID.randomUUID(), 2, next.state()), 1))
-                .isInstanceOf(StaleTurnException.class);
+                .isInstanceOf(GameNotFoundException.class);
         assertThat(games.find(game.id())).contains(next);
     }
 

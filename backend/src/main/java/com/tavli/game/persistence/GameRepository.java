@@ -2,6 +2,7 @@ package com.tavli.game.persistence;
 
 import com.tavli.engine.GameState;
 import com.tavli.game.Game;
+import com.tavli.game.GameNotFoundException;
 import com.tavli.game.StaleTurnException;
 import java.util.Optional;
 import java.util.UUID;
@@ -55,7 +56,8 @@ public class GameRepository {
      * Replaces the game's state if it is still on {@code expectedTurnNumber}. Callers normally hold the row lock
      * from {@link #findForUpdate}, so this guard is a backstop rather than the concurrency control.
      *
-     * @throws StaleTurnException if the game has moved on or no longer exists; nothing is written
+     * @throws StaleTurnException    if the game has moved on; nothing is written
+     * @throws GameNotFoundException if the game no longer exists
      */
     public void update(Game game, int expectedTurnNumber) {
         int rows = jdbc.sql("""
@@ -72,6 +74,9 @@ public class GameRepository {
                 .param("expected", expectedTurnNumber)
                 .update();
         if (rows != 1) {
+            if (find(game.id()).isEmpty()) {
+                throw new GameNotFoundException(game.id());
+            }
             throw new StaleTurnException(game.id(), expectedTurnNumber);
         }
     }

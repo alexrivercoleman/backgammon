@@ -9,7 +9,7 @@ public class StaleTurnException extends RuntimeException {
         super("Game " + id + " is on turn " + current + ", not turn " + submitted);
     }
 
-    /** The game was no longer on {@code expected} (or no longer existed) when it was saved. */
+    /** The game was no longer on {@code expected} when it was saved. */
     public StaleTurnException(UUID id, int expected) {
         super("Game " + id + " is no longer on turn " + expected);
     }
