@@ -1,4 +1,5 @@
-# Rendered at container start by the nginx image (envsubst): ${BACKEND_URL} is the API server.
+# Rendered at container start by the nginx image, which substitutes environment variables: BACKEND_URL is the
+# API server and NGINX_LOCAL_RESOLVERS the container's DNS servers (from /etc/resolv.conf).
 server {
     listen 80;
     server_name _;
@@ -9,8 +10,12 @@ server {
     gzip_min_length 1024;
 
     # The API lives on the backend; the browser only ever talks to this origin.
+    # Looking the backend up per request (cached 10s) keeps working if its container is recreated with a new IP.
+    resolver ${NGINX_LOCAL_RESOLVERS} valid=10s;
+
     location /api/ {
-        proxy_pass ${BACKEND_URL};
+        set $backend ${BACKEND_URL};
+        proxy_pass $backend;
         proxy_http_version 1.1;
         proxy_set_header Host $host;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;

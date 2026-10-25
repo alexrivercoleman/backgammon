@@ -1,5 +1,6 @@
 #!/usr/bin/env sh
-# Checks the deployed app answers: the page loads, the backend is ready, and a game can be created.
+# Checks the deployed app answers: the page loads and a game can be created through nginx to the backend
+# (which leaves one new game row behind).
 set -eu
 
 URL=${1:-http://localhost:${APP_PORT:-8088}}

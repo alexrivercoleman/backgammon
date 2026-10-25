@@ -18,8 +18,9 @@ spec:
           image: tavli-frontend:dev
           imagePullPolicy: Never
           env:
+            # Fully qualified: nginx's resolver does not apply the pod's DNS search domains.
             - name: BACKEND_URL
-              value: http://backend:8080
+              value: http://backend.tavli.svc.cluster.local:8080
           ports:
             - name: http
               containerPort: 80
