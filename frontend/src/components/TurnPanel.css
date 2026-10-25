@@ -39,7 +39,11 @@
   box-shadow: inset 0 0 0 3px rgba(0, 0, 0, 0.08), 0 2px 4px rgba(0, 0, 0, 0.35);
 }
 
-.swatch-white { background: radial-gradient(circle at 40% 35%, #fffdf6, #d6c8a6); }
+/* Ivory on the ivory panel needs a walnut rim to read. */
+.swatch-white {
+  background: radial-gradient(circle at 40% 35%, #fffdf6, #d6c8a6);
+  box-shadow: inset 0 0 0 3px rgba(0, 0, 0, 0.08), 0 0 0 1px #5b3a21, 0 2px 4px rgba(0, 0, 0, 0.35);
+}
 .swatch-black { background: radial-gradient(circle at 40% 35%, #5a5a5a, #1b1b1b); }
 
 .actions {
