@@ -35,10 +35,13 @@ Then open http://localhost:5173. Each page load starts a new game.
 Two players share the screen. The board is always drawn from the point of view of the player to move:
 their home is bottom-right next to the bear-off tray, and the board flips when the turn passes.
 
-1. Click a checker with a gold ring to pick it up; dashed rings show where it can go (red if it hits a blot,
-   the tray if it can bear off).
-2. Click a destination. Repeat for each die; played dice are dimmed. **Undo** takes back one move.
-3. **Confirm** once the turn is complete, or **Pass** when no move is possible.
+1. To decide who starts, White and Black each press **Roll die** for one die; the higher number starts and
+   plays both opening dice (a tie is thrown again).
+2. Each later turn starts with **Roll dice**. The server rolls only when the player asks.
+3. Click a checker glowing blue to pick it up; dashed rings show where it can go (red if it hits a blot, the
+   tray if it can bear off).
+4. Click a destination. Repeat for each die; played dice are dimmed. **Undo** takes back one move.
+5. **Confirm** once the turn is complete, or **Pass** when no move is possible.
 
 The UI only follows the turn graph the server sends; it never decides what is legal. When bearing off could
 use either die, a click uses the lower one so the higher stays available (undo to choose otherwise).
