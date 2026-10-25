@@ -1,5 +1,6 @@
 import { FlippingBoard } from './board/FlippingBoard'
 import { GameOver } from './components/GameOver'
+import { HelpButton } from './components/HelpButton'
 import { OpeningBanner } from './components/OpeningBanner'
 import { TurnPanel } from './components/TurnPanel'
 import { useGame } from './game/useGame'
@@ -11,6 +12,7 @@ function App() {
 
   return (
     <main>
+      <HelpButton />
       <header className="title">
         <h1>Τάβλι</h1>
         <span>Portes</span>

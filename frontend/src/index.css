@@ -5,6 +5,8 @@
   --ink-soft: #4b5568;
   --aegean: #1f4e8c;
   --panel: rgba(255, 252, 245, 0.92);
+  --panel-solid: #fdfaf2;
+  --panel-inset: #f6f0e2;
   --panel-edge: rgba(31, 42, 58, 0.12);
   font-family: Georgia, 'Times New Roman', serif;
   color: var(--ink);
@@ -19,6 +21,8 @@
     --ink-soft: #b7b0a2;
     --aegean: #7fb0ee;
     --panel: rgba(20, 28, 42, 0.92);
+    --panel-solid: #18202e;
+    --panel-inset: #1f2838;
     --panel-edge: rgba(236, 230, 216, 0.14);
   }
 }
