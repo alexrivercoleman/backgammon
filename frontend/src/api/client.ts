@@ -1,4 +1,4 @@
-import type { GameView, LogEntry, Move, ProblemDetail } from './types'
+import type { GameView, LogEntry, Move, Player, ProblemDetail } from './types'
 
 export class ApiError extends Error {
   readonly status: number
@@ -40,6 +40,14 @@ export function submitTurn(id: string, turnNumber: number, moves: Move[]): Promi
   return request(`/api/games/${id}/turns`, {
     method: 'POST',
     body: JSON.stringify({ turnNumber, moves }),
+  })
+}
+
+/** Rolls for `player`: their opening die, or their dice for the turn. */
+export function rollDice(id: string, turnNumber: number, player: Player): Promise<GameView> {
+  return request(`/api/games/${id}/roll`, {
+    method: 'POST',
+    body: JSON.stringify({ turnNumber, player }),
   })
 }
 

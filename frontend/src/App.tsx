@@ -26,11 +26,14 @@ function App() {
       {game ? (
         <>
           <TurnPanel controller={controller} />
-          {game.turnNumber === 1 && <OpeningBanner throws={controller.openingThrows} starter={game.toMove} />}
+          {game.phase === 'MOVING' && game.turnNumber === 1 && (
+            <OpeningBanner throws={game.openingThrows} starter={game.toMove} />
+          )}
           <div className="table">
             <FlippingBoard
               board={node?.board ?? game.board}
-              mover={game.winner ?? game.toMove}
+              // During the opening the board stays on White's side; it flips if Black wins the throw.
+              mover={game.phase === 'OPENING' ? 'WHITE' : (game.winner ?? game.toMove)}
               movable={controller.movable}
               selected={controller.selected}
               destinations={controller.destinations}

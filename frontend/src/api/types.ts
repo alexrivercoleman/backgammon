@@ -41,12 +41,24 @@ export interface TurnView {
   nodes: NodeView[]
 }
 
+/**
+ * OPENING: each player throws one die (WHITE first) to decide who starts. ROLLING: `toMove` must roll.
+ * MOVING: `dice` and `turn` are present. FINISHED: `winner` is set.
+ */
+export type Phase = 'OPENING' | 'ROLLING' | 'MOVING' | 'FINISHED'
+
 export interface GameView {
   id: string
   status: 'IN_PROGRESS' | 'FINISHED'
+  phase: Phase
   turnNumber: number
+  /** Who acts next; in the OPENING, whose opening die is to be thrown. */
   toMove: Player
   dice: [number, number] | null
+  /** WHITE's opening die while BLACK has yet to throw. */
+  openingDie: number | null
+  /** Opening rounds so far as [white, black], ties included; empty after the first turn. */
+  openingThrows: [number, number][]
   winner: Player | null
   board: BoardView
   turn: TurnView | null

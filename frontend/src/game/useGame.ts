@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { ApiError, createGame, getGame, getLog, submitTurn } from '../api/client'
+import { ApiError, createGame, getGame, rollDice, submitTurn } from '../api/client'
 import type { From, GameView, Move, NodeView, To } from '../api/types'
 import { currentNode, sources, startWalk, step, targets, undo, type TargetOption, type TurnWalk } from './turn'
 
@@ -14,11 +14,11 @@ export interface GameController {
   selected: From | null
   movable: From[]
   destinations: TargetOption[]
-  /** Opening throws as [white, black], ties included. */
-  openingThrows: [number, number][]
   busy: boolean
   error: string | null
   pick(location: Location): void
+  /** Rolls for the player to act: their opening die, or their dice for the turn. */
+  roll(): void
   undo(): void
   confirm(): void
   pass(): void
@@ -30,7 +30,6 @@ export function useGame(): GameController {
   const [game, setGame] = useState<GameView | null>(null)
   const [walk, setWalk] = useState<TurnWalk>(startWalk)
   const [selected, setSelected] = useState<From | null>(null)
-  const [openingThrows, setOpeningThrows] = useState<[number, number][]>([])
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -43,12 +42,8 @@ export function useGame(): GameController {
   const begin = useCallback(async () => {
     setBusy(true)
     setError(null)
-    setOpeningThrows([])
     try {
-      const created = await createGame()
-      show(created)
-      const log = await getLog(created.id)
-      setOpeningThrows(log.filter((e) => e.kind === 'OPENING_THROW' && e.dice).map((e) => e.dice!))
+      show(await createGame())
     } catch (e) {
       setError(describe(e))
     } finally {
@@ -82,15 +77,16 @@ export function useGame(): GameController {
     }
   }
 
-  const submit = async (moves: Move[]) => {
-    if (!game) return
+  /** Sends an action to the server and shows the game it returns. */
+  const act = async (request: (current: GameView) => Promise<GameView>) => {
+    if (!game || busy) return
     setBusy(true)
     setError(null)
     try {
-      show(await submitTurn(game.id, game.turnNumber, moves))
+      show(await request(game))
     } catch (e) {
       setError(describe(e))
-      // The server rejected the turn (stale or illegal); reload its view so the board matches.
+      // The server refused the action (out of turn, stale or illegal); reload its view so the board matches.
       if (e instanceof ApiError && (e.status === 409 || e.status === 422)) {
         show(await getGame(game.id).catch(() => game))
       }
@@ -98,6 +94,7 @@ export function useGame(): GameController {
       setBusy(false)
     }
   }
+  const submit = (moves: Move[]) => act((g) => submitTurn(g.id, g.turnNumber, moves))
 
   const retry = () => {
     if (!game) {
@@ -119,10 +116,14 @@ export function useGame(): GameController {
     selected,
     movable,
     destinations,
-    openingThrows,
     busy,
     error,
     pick,
+    roll: () => {
+      if (game?.phase === 'OPENING' || game?.phase === 'ROLLING') {
+        void act((g) => rollDice(g.id, g.turnNumber, g.toMove))
+      }
+    },
     undo: () => {
       setWalk(undo(walk))
       setSelected(null)

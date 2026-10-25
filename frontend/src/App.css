@@ -63,7 +63,7 @@
 /* Keep the whole board on screen: limit its width by the height left under the header and panel. */
 .table {
   position: relative;
-  width: min(100%, calc((100vh - 290px) * 984 / 688));
+  width: min(100%, calc((100vh - 310px) * 984 / 688));
   margin: 0 auto;
 }
 

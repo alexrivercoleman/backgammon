@@ -5,6 +5,8 @@
   gap: 16px;
   flex-wrap: wrap;
   margin-bottom: 18px;
+  /* Tall enough for the captioned opening dice, so the board doesn't shift when the opening ends. */
+  min-height: 94px;
   padding: 14px 18px;
   border-radius: 14px;
   background: var(--panel);
