@@ -1,17 +1,23 @@
 import { describe, expect, it } from 'vitest'
 import type { Player } from '../api/types'
 import {
+  BAR_WIDTH,
   BAR_X,
   FIELD_BOTTOM,
   FIELD_TOP,
   MAX_VISIBLE,
-  RIGHT_HALF_X,
+  SPARE_TRAY_X,
+  TRAY_WIDTH,
+  TRAY_X,
+  WIDTH,
   barStack,
   pipToPoint,
   pointSlot,
   pointSlots,
   stack,
   trayStack,
+  turnX,
+  type PointSlot,
 } from './geometry'
 
 const players: Player[] = ['WHITE', 'BLACK']
@@ -23,34 +29,52 @@ describe('board geometry', () => {
     expect(keys.size).toBe(24)
   })
 
-  it.each(players)("puts %s's home bottom-right with pip 1 next to the tray", (mover) => {
+  it.each(players)("puts %s's home bottom row with pip 1 next to their tray", (mover) => {
     const slots = pointSlots(mover)
+    const tray = turnX(mover, TRAY_X, TRAY_WIDTH) + TRAY_WIDTH / 2
+    const distance = (s: PointSlot) => Math.abs(s.x - tray)
     const one = slots.find((s) => s.pip === 1)!
     const bottom = slots.filter((s) => !s.top)
     expect(one.top).toBe(false)
-    expect(one.x).toBe(Math.max(...bottom.map((s) => s.x)))
+    expect(distance(one)).toBe(Math.min(...bottom.map(distance)))
     for (let pip = 1; pip <= 6; pip++) {
       const slot = slots.find((s) => s.pip === pip)!
       expect(slot.top).toBe(false)
-      expect(slot.x).toBeGreaterThan(RIGHT_HALF_X)
+      expect(distance(slot)).toBeLessThan(WIDTH / 2)
     }
   })
 
-  it('mirrors the board top to bottom when Black is to move', () => {
+  it("puts White's home bottom-right and Black's bottom-left", () => {
+    expect(pointSlot('WHITE', 1).x).toBeGreaterThan(WIDTH / 2)
+    expect(pointSlot('BLACK', 24).x).toBeLessThan(WIDTH / 2)
+    expect(turnX('WHITE', TRAY_X, TRAY_WIDTH)).toBeGreaterThan(WIDTH / 2)
+    expect(turnX('BLACK', TRAY_X, TRAY_WIDTH)).toBe(SPARE_TRAY_X)
+  })
+
+  it('turns the board half a turn about its centre when Black is to move', () => {
     for (let point = 1; point <= 24; point++) {
       const white = pointSlot('WHITE', point)
       const black = pointSlot('BLACK', point)
-      expect(black.x).toBe(white.x)
+      expect(black.x).toBe(WIDTH - white.x)
       expect(black.top).toBe(!white.top)
     }
     expect(pointSlot('BLACK', 24)).toMatchObject({ pip: 1, top: false })
     expect(pointSlot('BLACK', 1)).toMatchObject({ pip: 24, top: true })
   })
 
-  it('keeps the stain pattern fixed on screen and alternates it along each row', () => {
+  it('keeps the playing field in place: the case turns onto itself', () => {
+    const field = (mover: Player) => pointSlots(mover).map((s) => `${s.x}:${s.top}`).sort()
+    expect(field('BLACK')).toEqual(field('WHITE'))
+    expect(turnX('BLACK', BAR_X, BAR_WIDTH)).toBe(BAR_X)
+    expect(turnX('BLACK', SPARE_TRAY_X, TRAY_WIDTH)).toBe(TRAY_X)
+  })
+
+  it('turns the stains with the wood and alternates them along each row', () => {
     const white = pointSlots('WHITE')
     const black = pointSlots('BLACK')
-    const byPosition = (slots: typeof white) => slots.map((s) => `${s.x}:${s.top}:${s.dark}`).sort()
+    expect(black.map((s) => s.dark)).toEqual(white.map((s) => s.dark))
+    // A half turn lands the pattern on itself, so the board looks the same with the checkers off.
+    const byPosition = (slots: PointSlot[]) => slots.map((s) => `${s.x}:${s.top}:${s.dark}`).sort()
     expect(byPosition(black)).toEqual(byPosition(white))
     expect(pointSlot('WHITE', 1).dark).not.toBe(pointSlot('WHITE', 2).dark)
     // Facing points differ, as on a real board.
@@ -87,5 +111,7 @@ describe('board geometry', () => {
     expect(trayStack('WHITE', 'WHITE', 3).top).toBe(false)
     expect(trayStack('WHITE', 'BLACK', 3).top).toBe(true)
     expect(trayStack('WHITE', 'WHITE', 15).slabs).toHaveLength(15)
+    expect(trayStack('WHITE', 'WHITE', 1).slabs[0].x).toBe(TRAY_X + 8)
+    expect(trayStack('BLACK', 'WHITE', 1).slabs[0].x).toBe(SPARE_TRAY_X + 8)
   })
 })

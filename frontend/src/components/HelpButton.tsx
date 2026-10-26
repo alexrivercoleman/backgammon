@@ -39,13 +39,13 @@ export function HelpButton() {
         onClick={closeOnBackdrop}>
         <div className="rules-card">
           <header>
-            <h2 id="rules-title">How to play <span>Πόρτες</span></h2>
+            <h2 id="rules-title">How to play <span>Portes</span></h2>
             <button type="button" className="rules-close" onClick={() => setOpen(false)} aria-label="Close">×</button>
           </header>
           <div className="rules-grid">
             <Rule title="The goal" art={<GoalArt />}>
-              Race your 15 checkers counter-clockwise into <b>your home</b>, then off the board. First to clear
-              all 15 wins.
+              Race your 15 checkers round the board into <b>your home</b>, then off into the tray. First to
+              clear all 15 wins.
             </Rule>
             <Rule title="Who starts" art={<OpeningArt />}>
               Each player rolls one die. Higher starts, playing both dice. A tie? Roll again.
@@ -60,8 +60,8 @@ export function HelpButton() {
               Land anywhere except on <b>two or more</b> of your opponent's checkers. Landing on a single one hits it.
             </Rule>
             <Rule title="Hit? Come back in" art={<BarArt />}>
-              A hit checker goes to the bar. Its owner must bring it back in, top-right, before moving anything
-              else.
+              A hit checker goes to the bar. Its owner must bring it back in, in the opponent's home, before
+              moving anything else.
             </Rule>
             <Rule title="Bearing off" art={<BearOffArt />}>
               Once all 15 are home, move them off. A die bigger than you need takes off your farthest checker.
@@ -70,8 +70,8 @@ export function HelpButton() {
               Play both dice if you can. If only one fits, play the higher. If nothing moves, you pass.
             </Rule>
             <Rule title="On this screen" art={<ControlsArt />}>
-              The board always turns to face the player whose turn it is. <b>Undo</b> takes back a move until
-              you confirm.
+              The board turns round on the table for whoever's turn it is, so your home is always at the
+              bottom, beside the tray. <b>Undo</b> takes back a move until you confirm.
             </Rule>
           </div>
         </div>

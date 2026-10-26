@@ -1,4 +1,4 @@
-import { FlippingBoard } from './board/FlippingBoard'
+import { SpinningBoard } from './board/SpinningBoard'
 import { GameOver } from './components/GameOver'
 import { HelpButton } from './components/HelpButton'
 import { OpeningBanner } from './components/OpeningBanner'
@@ -14,7 +14,7 @@ function App() {
     <main>
       <HelpButton />
       <header className="title">
-        <h1>Τάβλι</h1>
+        <h1>Tavli</h1>
         <span>Portes</span>
       </header>
 
@@ -32,9 +32,9 @@ function App() {
             <OpeningBanner throws={game.openingThrows} starter={game.toMove} />
           )}
           <div className="table">
-            <FlippingBoard
+            <SpinningBoard
               board={node?.board ?? game.board}
-              // During the opening the board stays on White's side; it flips if Black wins the throw.
+              // During the opening the board stays on White's side; it turns round if Black wins the throw.
               mover={game.phase === 'OPENING' ? 'WHITE' : (game.winner ?? game.toMove)}
               movable={controller.movable}
               selected={controller.selected}

@@ -1,5 +1,5 @@
 // Small illustrations for the rules card, drawn in the board's own wood, stains and checkers. The mini board
-// uses the same layout as the real one: the reader's home is bottom-right, next to the tray.
+// is the real one seen from White's side: home bottom-right, next to the tray, with the spare tray at the far end.
 
 import { createContext, useContext, useId, type ReactNode } from 'react'
 
@@ -79,18 +79,25 @@ function Svg({ width, height, label, children }: { width: number; height: number
   )
 }
 
-// Mini board: 24 points of 16 units, a bar of 12 and a tray of 20, drawn 14 units down to leave room for labels.
+// Mini board: 24 points of 14 units, a bar of 12 and a tray of 20 at each end, drawn 14 units down to leave
+// room for labels.
 const TOP = 14
 const FIELD_TOP = TOP + 6
 const FIELD_BOTTOM = TOP + 118
-const PW = 16
+const PW = 14
+const SPARE_TRAY = 6
+const LEFT = SPARE_TRAY + 24
+const BAR = LEFT + 6 * PW + 6
+const RIGHT = BAR + 6
+const TRAY = RIGHT + 6 * PW + 4
+const HOME_CENTRE = RIGHT + 3 * PW
 
 /** Screen position of one of the reader's points (1 = next to the tray, bottom-right). */
 function pip(n: number): { x: number; top: boolean } {
-  if (n <= 6) return { x: 114 + (6 - n) * PW + PW / 2, top: false }
-  if (n <= 12) return { x: 6 + (12 - n) * PW + PW / 2, top: false }
-  if (n <= 18) return { x: 6 + (n - 13) * PW + PW / 2, top: true }
-  return { x: 114 + (n - 19) * PW + PW / 2, top: true }
+  if (n <= 6) return { x: RIGHT + (6 - n) * PW + PW / 2, top: false }
+  if (n <= 12) return { x: LEFT + (12 - n) * PW + PW / 2, top: false }
+  if (n <= 18) return { x: LEFT + (n - 13) * PW + PW / 2, top: true }
+  return { x: RIGHT + (n - 19) * PW + PW / 2, top: true }
 }
 
 function stackY(top: boolean, i: number) {
@@ -102,15 +109,14 @@ function MiniBoard({ children }: { children?: ReactNode }) {
   return (
     <g>
       <rect x={0} y={TOP} width={240} height={124} rx={8} fill={WOOD.frame} />
-      <rect x={6} y={FIELD_TOP} width={96} height={112} fill={WOOD.field} />
-      <rect x={114} y={FIELD_TOP} width={96} height={112} fill={WOOD.field} />
-      <line x1={108} y1={TOP} x2={108} y2={TOP + 124} stroke="#1e1108" strokeWidth={1.5} />
-      <rect x={214} y={FIELD_TOP} width={20} height={112} rx={3} fill={WOOD.tray} />
+      {[LEFT, RIGHT].map((x) => <rect key={x} x={x} y={FIELD_TOP} width={6 * PW} height={112} fill={WOOD.field} />)}
+      <line x1={BAR} y1={TOP} x2={BAR} y2={TOP + 124} stroke="#1e1108" strokeWidth={1.5} />
+      {[SPARE_TRAY, TRAY].map((x) => <rect key={x} x={x} y={FIELD_TOP} width={20} height={112} rx={3} fill={WOOD.tray} />)}
       {points.map((n) => {
         const { x, top } = pip(n)
         const base = top ? FIELD_TOP : FIELD_BOTTOM
         const apex = top ? FIELD_TOP + 46 : FIELD_BOTTOM - 46
-        return <path key={n} d={`M ${x - 7} ${base} L ${x + 7} ${base} L ${x} ${apex} Z`}
+        return <path key={n} d={`M ${x - 6} ${base} L ${x + 6} ${base} L ${x} ${apex} Z`}
           fill={n % 2 ? WOOD.dark : WOOD.light} />
       })}
       {children}
@@ -129,14 +135,14 @@ export function GoalArt() {
   return (
     <Svg width={240} height={152} label="Your checkers travel counter-clockwise from top-right to your home, bottom-right, then off">
       <MiniBoard>
-        <rect x={114} y={FIELD_BOTTOM - 52} width={96} height={52} fill={BLUE} opacity={0.14} />
+        <rect x={RIGHT} y={FIELD_BOTTOM - 52} width={6 * PW} height={52} fill={BLUE} opacity={0.14} />
         <Checker x={pip(24).x} y={stackY(true, 0)} tone="ivory" />
         <Checker x={pip(24).x} y={stackY(true, 1)} tone="ivory" />
-        <Arrow d={`M ${pip(24).x - 10} ${FIELD_TOP + 34} H 22 Q 14 34 14 ${FIELD_TOP + 44} V ${FIELD_BOTTOM - 40} Q 14 ${FIELD_BOTTOM - 30} 24 ${FIELD_BOTTOM - 30} H 222`} />
+        <Arrow d={`M ${pip(24).x - 10} ${FIELD_TOP + 34} H ${LEFT + 16} Q ${LEFT + 8} ${FIELD_TOP + 34} ${LEFT + 8} ${FIELD_TOP + 44} V ${FIELD_BOTTOM - 40} Q ${LEFT + 8} ${FIELD_BOTTOM - 30} ${LEFT + 18} ${FIELD_BOTTOM - 30} H ${TRAY + 8}`} />
       </MiniBoard>
       <Label x={pip(24).x} y={10}>start</Label>
-      <Label x={162} y={150}>your home</Label>
-      <Label x={224} y={150}>off</Label>
+      <Label x={HOME_CENTRE} y={150}>your home</Label>
+      <Label x={TRAY + 10} y={150}>off</Label>
     </Svg>
   )
 }
@@ -219,14 +225,14 @@ export function BarArt() {
   return (
     <Svg width={240} height={152} label="A hit checker goes to the bar and must re-enter in the top-right quarter before anything else moves">
       <MiniBoard>
-        <rect x={114} y={FIELD_TOP} width={96} height={52} fill={BLUE} opacity={0.16} />
-        <Checker x={108} y={FIELD_TOP + 70} tone="ivory" glow />
-        <Arrow d={`M 112 ${FIELD_TOP + 62} Q 128 ${FIELD_TOP + 34} ${pip(21).x} ${FIELD_TOP + 14}`} />
+        <rect x={RIGHT} y={FIELD_TOP} width={6 * PW} height={52} fill={BLUE} opacity={0.16} />
+        <Checker x={BAR} y={FIELD_TOP + 70} tone="ivory" glow />
+        <Arrow d={`M ${BAR + 4} ${FIELD_TOP + 62} Q ${BAR + 20} ${FIELD_TOP + 34} ${pip(21).x} ${FIELD_TOP + 14}`} />
         <Checker x={pip(23).x} y={stackY(true, 0)} tone="charcoal" />
         <Checker x={pip(23).x} y={stackY(true, 1)} tone="charcoal" />
       </MiniBoard>
-      <Label x={162} y={10}>come back in here</Label>
-      <Label x={108} y={150}>the bar</Label>
+      <Label x={HOME_CENTRE} y={10}>come back in here</Label>
+      <Label x={BAR} y={150}>the bar</Label>
     </Svg>
   )
 }
@@ -237,19 +243,19 @@ export function BearOffArt() {
   return (
     <Svg width={240} height={152} label="When all your checkers are in your home quarter, move them off into the tray">
       <MiniBoard>
-        <rect x={114} y={FIELD_BOTTOM - 52} width={96} height={52} fill={BLUE} opacity={0.14} />
+        <rect x={RIGHT} y={FIELD_BOTTOM - 52} width={6 * PW} height={52} fill={BLUE} opacity={0.14} />
         {home.flatMap(([n, count]) =>
           Array.from({ length: count }, (_, i) => (
             <Checker key={`${n}-${i}`} x={pip(n).x} y={stackY(false, i)} tone="ivory" />
           )),
         )}
         {[0, 1, 2].map((i) => (
-          <rect key={i} x={217} y={FIELD_BOTTOM - 10 - i * 7} width={14} height={5} rx={1.5} fill="#f6eedb" />
+          <rect key={i} x={TRAY + 3} y={FIELD_BOTTOM - 10 - i * 7} width={14} height={5} rx={1.5} fill="#f6eedb" />
         ))}
-        <Arrow d={`M ${pip(3).x} ${FIELD_BOTTOM - 48} Q ${pip(1).x + 4} ${FIELD_BOTTOM - 76} 224 ${FIELD_BOTTOM - 34}`} />
+        <Arrow d={`M ${pip(3).x} ${FIELD_BOTTOM - 48} Q ${pip(1).x + 4} ${FIELD_BOTTOM - 76} ${TRAY + 10} ${FIELD_BOTTOM - 34}`} />
       </MiniBoard>
-      <Label x={162} y={150}>all 15 home</Label>
-      <Label x={224} y={150}>off</Label>
+      <Label x={HOME_CENTRE} y={150}>all 15 home</Label>
+      <Label x={TRAY + 10} y={150}>off</Label>
     </Svg>
   )
 }

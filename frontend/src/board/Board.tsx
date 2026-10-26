@@ -18,6 +18,7 @@ import {
   POINT_WIDTH,
   RIGHT_HALF_X,
   SLAB_HEIGHT,
+  SPARE_TRAY_X,
   TRAY_WIDTH,
   TRAY_X,
   WIDTH,
@@ -25,13 +26,14 @@ import {
   pointSlots,
   stack,
   trayStack,
+  turnX,
   type PointSlot,
 } from './geometry'
 import './Board.css'
 
 export interface BoardProps {
   board: BoardView
-  /** Whose perspective to draw from: their home is bottom-right. */
+  /** Whose side to draw from: White's home is bottom-right, Black's bottom-left, each next to the tray. */
   mover: Player
   /** Origins with a legal move; their top checker is highlighted. */
   movable?: From[]
@@ -48,11 +50,12 @@ export function Board({ board, mover, movable = [], selected = null, destination
   const sign = mover === 'WHITE' ? 1 : -1
   const stateOf = (from: From) => (selected === from ? 'selected' : movable.includes(from) ? 'movable' : undefined)
   const destination = (to: number | 'off') => destinations.find((d) => d.to === to)
+  const trayX = turnX(mover, TRAY_X, TRAY_WIDTH)
   return (
     <svg className="board" viewBox={`0 0 ${WIDTH} ${HEIGHT}`} role="img" aria-label="Tavli board">
       <Defs />
 
-      {/* Case: walnut frame, two light playing fields, a hinged bar and the bear-off tray. */}
+      {/* Case: walnut frame, two light playing fields, a hinged bar and a tray at each end. */}
       <rect className="frame" x={0} y={0} width={WIDTH} height={HEIGHT} rx={18} />
       <rect className="grain" x={0} y={0} width={WIDTH} height={HEIGHT} rx={18} filter="url(#grain-frame)" />
       {[LEFT_HALF_X, RIGHT_HALF_X].map((x) => (
@@ -71,7 +74,9 @@ export function Board({ board, mover, movable = [], selected = null, destination
         y2={HEIGHT} />
       <Hinge y={FIELD_TOP + 70} />
       <Hinge y={FIELD_BOTTOM - 70} />
-      <rect className="tray" x={TRAY_X} y={FIELD_TOP} width={TRAY_WIDTH} height={FIELD_HEIGHT} rx={6} />
+      {[SPARE_TRAY_X, TRAY_X].map((x) => (
+        <rect key={x} className="tray" x={x} y={FIELD_TOP} width={TRAY_WIDTH} height={FIELD_HEIGHT} rx={6} />
+      ))}
 
       {slots.map((slot) => (
         <Point key={slot.point} slot={slot} />
@@ -115,7 +120,7 @@ export function Board({ board, mover, movable = [], selected = null, destination
         )
       })}
       {destination('off') && (
-        <rect className="tray-target" x={TRAY_X + 3} y={FIELD_TOP + FIELD_HEIGHT / 2} width={TRAY_WIDTH - 6}
+        <rect className="tray-target" x={trayX + 3} y={FIELD_TOP + FIELD_HEIGHT / 2} width={TRAY_WIDTH - 6}
           height={FIELD_HEIGHT / 2 - 3} rx={6} />
       )}
 
@@ -152,7 +157,7 @@ export function Board({ board, mover, movable = [], selected = null, destination
             x={BAR_X} y={FIELD_TOP + FIELD_HEIGHT / 2} width={BAR_WIDTH} height={FIELD_HEIGHT / 2} />
           <HitArea location="off" onPick={onPick} source={false} target={destination('off') !== undefined}
             label={`Bear off, ${board.off[mover]} borne off`}
-            x={TRAY_X} y={FIELD_TOP} width={TRAY_WIDTH} height={FIELD_HEIGHT} />
+            x={trayX} y={FIELD_TOP} width={TRAY_WIDTH} height={FIELD_HEIGHT} />
         </g>
       )}
     </svg>

@@ -80,8 +80,7 @@
   .board .checker-ring, .board .ghost, .board .tray-target { animation: none; }
 }
 
-/* The flip turns the whole case about its horizontal axis. */
-.flipper {
+/* A turn spins the whole case on the table about its centre. */
+.turntable {
   transform-origin: 50% 50%;
-  backface-visibility: hidden;
 }

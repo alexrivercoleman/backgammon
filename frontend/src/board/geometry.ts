@@ -1,6 +1,8 @@
-// Board layout in SVG units. The board is drawn from the perspective of the player to move: their home
-// (pips 1-6) is bottom-right next to the bear-off tray, and they move counter-clockwise. Switching player
-// mirrors the board top to bottom. This is drawing only; legality comes from the server's turn graph.
+// Board layout in SVG units. The board is drawn from the side of the player to move, as if they sat at it.
+// White's home (pips 1-6) is bottom-right next to the bear-off tray and White moves counter-clockwise. Black
+// sees the whole case turned half a turn about its centre, so their home and the tray are bottom-left and they
+// move clockwise. The case has a tray at each end, so it turns onto itself and the playing field never moves.
+// This is drawing only; legality comes from the server's turn graph.
 
 import type { Player } from '../api/types'
 
@@ -14,7 +16,9 @@ export const POINT_HEIGHT = 260
 export const CHECKER_RADIUS = POINT_WIDTH / 2 - 3
 export const MAX_VISIBLE = 5
 
-export const LEFT_HALF_X = FRAME
+/** The empty tray at the far end of the case from White's home. */
+export const SPARE_TRAY_X = FRAME
+export const LEFT_HALF_X = SPARE_TRAY_X + TRAY_WIDTH + FRAME
 export const BAR_X = LEFT_HALF_X + HALF_WIDTH
 export const RIGHT_HALF_X = BAR_X + BAR_WIDTH
 export const TRAY_X = RIGHT_HALF_X + HALF_WIDTH + FRAME
@@ -23,6 +27,14 @@ export const FIELD_TOP = FRAME
 export const FIELD_BOTTOM = FRAME + FIELD_HEIGHT
 export const HEIGHT = FIELD_BOTTOM + FRAME
 export const HALF_WIDTH_UNITS = HALF_WIDTH
+
+/**
+ * Left edge, on the mover's side, of a box `width` wide whose left edge is at `x` on White's side. Things in
+ * the case are symmetric top to bottom or placed by the mover's side, so a half turn only swaps left and right.
+ */
+export function turnX(mover: Player, x: number, width = 0): number {
+  return mover === 'WHITE' ? x : WIDTH - x - width
+}
 
 /** Converts between a player's pip (1 = next to bearing off) and an absolute point. Its own inverse. */
 export function pipToPoint(mover: Player, pip: number): number {
@@ -41,36 +53,36 @@ export interface PointSlot {
   baseY: number
   /** Which way stacks grow: +1 down from the top edge, -1 up from the bottom edge. */
   direction: 1 | -1
-  /** Alternating stain, fixed by screen position so the board pattern stays put when it flips. */
+  /** Alternating stain, inlaid in the wood: it turns with the board. */
   dark: boolean
 }
 
 export function pointSlot(mover: Player, point: number): PointSlot {
-  const pip = pipToPoint(mover, point)
+  // Laid out as White sees it (White's pip is the point), then turned for Black.
   let column: number
   let left: number
-  if (pip <= 6) {
+  if (point <= 6) {
     left = RIGHT_HALF_X
-    column = 6 - pip
-  } else if (pip <= 12) {
+    column = 6 - point
+  } else if (point <= 12) {
     left = LEFT_HALF_X
-    column = 12 - pip
-  } else if (pip <= 18) {
+    column = 12 - point
+  } else if (point <= 18) {
     left = LEFT_HALF_X
-    column = pip - 13
+    column = point - 13
   } else {
     left = RIGHT_HALF_X
-    column = pip - 19
+    column = point - 19
   }
-  const top = pip > 12
+  const top = (point > 12) === (mover === 'WHITE')
   return {
     point,
-    pip,
-    x: left + column * POINT_WIDTH + POINT_WIDTH / 2,
+    pip: pipToPoint(mover, point),
+    x: turnX(mover, left + column * POINT_WIDTH + POINT_WIDTH / 2),
     top,
     baseY: top ? FIELD_TOP : FIELD_BOTTOM,
     direction: top ? 1 : -1,
-    dark: pip % 2 === 1,
+    dark: point % 2 === 1,
   }
 }
 
@@ -102,7 +114,7 @@ const BAR_GAP = 16
 /** Checkers on the bar: the mover's in the bottom half, the opponent's in the top half, growing outwards. */
 export function barStack(mover: Player, owner: Player, count: number): Stack {
   const mine = owner === mover
-  return stack(BAR_X + BAR_WIDTH / 2, mine ? CENTER_Y + BAR_GAP : CENTER_Y - BAR_GAP, mine ? 1 : -1, count)
+  return stack(turnX(mover, BAR_X + BAR_WIDTH / 2), mine ? CENTER_Y + BAR_GAP : CENTER_Y - BAR_GAP, mine ? 1 : -1, count)
 }
 
 export const SLAB_HEIGHT = 14
@@ -117,7 +129,7 @@ export interface TrayStack {
 /** Borne-off checkers as thin slabs: the mover's from the bottom of the tray, the opponent's from the top. */
 export function trayStack(mover: Player, owner: Player, count: number): TrayStack {
   const top = owner !== mover
-  const x = TRAY_X + 8
+  const x = turnX(mover, TRAY_X, TRAY_WIDTH) + 8
   const slabs = Array.from({ length: count }, (_, i) => ({
     x,
     y: top ? FIELD_TOP + 8 + i * (SLAB_HEIGHT + 2) : FIELD_BOTTOM - 8 - SLAB_HEIGHT - i * (SLAB_HEIGHT + 2),
