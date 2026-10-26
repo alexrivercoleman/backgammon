@@ -31,3 +31,13 @@ my engineering skills. It didn't hurt that I've been playing it with family for 
   I'd add.
 - Along with it: accounts, an Elo system, a game replay viewer (via the move log) and end-to-end
   testing/production hardening.
+
+## Time breakdown
+
+| Task               | Time      |
+|--------------------|-----------|
+| Planning / design  | 1h        |
+| Game logic + tests | 1.75h     |
+| UI                 | 1.25h     |
+| README / notes     | 0.5h      |
+| **Total**          | **4.5h**  |
