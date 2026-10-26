@@ -27,7 +27,9 @@ my engineering skills. It didn't hurt that I've been playing it with family for 
 
 ## If I Had More Time
 
-- Currently, the app is developed to easily accommodate future online play, so that would be the first thing
+- Traditionally, tavli is played in 3 phases in Greece; Portes, Plakoto, and Fevga. I would implement the other 
+  two game versions and allow multi-round scorekeeping and version selection.
+- Currently, the app is developed to easily accommodate future online play, so that would be the next thing
   I'd add.
 - Along with it: accounts, an Elo system, a game replay viewer (via the move log) and end-to-end
   testing/production hardening.
