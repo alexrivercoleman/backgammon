@@ -37,7 +37,8 @@ my engineering skills. It didn't hurt that I've been playing it with family for 
 | Task               | Time      |
 |--------------------|-----------|
 | Planning / design  | 1h        |
-| Game logic + tests | 1.75h     |
-| UI                 | 1.25h     |
+| Game logic + tests | 1.25h     |
+| UI                 | 1h        |
+| Infrastructure     | 0.75h     |
 | README / notes     | 0.5h      |
 | **Total**          | **4.5h**  |
